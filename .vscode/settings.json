@@ -1,0 +1,5 @@
+{
+  "python.pythonPath": "/Users/redamakhoukh/.local/share/virtualenvs/promesse_trading_engine-R9nyzed3/bin/python",
+  "python.linting.enabled": false,
+  "python.formatting.provider": "autopep8"
+}

@@ -1,0 +1,112 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+ABCMeta	../data_handler/data_handler.py	/^from abc import ABCMeta, abstractmethod$/;"	kind:namespace	line:3
+ABCMeta	../strategy/strategy.py	/^from abc import ABCMeta, abstractmethod$/;"	kind:namespace	line:1
+Backtest	../backtest.py	/^class Backtest:$/;"	kind:class	line:9
+Backtest	../main.py	/^from backtest import Backtest$/;"	kind:namespace	line:4
+CSVDataHandler	../data_handler/csv_data_handler.py	/^class CSVDataHandler(DataHandler):$/;"	kind:class	line:12
+CSVDataHandler	../main.py	/^from data_handler.csv_data_handler import CSVDataHandler$/;"	kind:namespace	line:1
+DataHandler	../data_handler/csv_data_handler.py	/^from data_handler.data_handler import DataHandler$/;"	kind:namespace	line:1
+DataHandler	../data_handler/data_handler.py	/^class DataHandler(metaclass=ABCMeta):$/;"	kind:class	line:6
+DataHandler	../main.py	/^    DataHandler=CSVDataHandler,$/;"	kind:variable	line:14
+EMA	../strategy/pprsi.py	/^from talib import RSI, EMA$/;"	kind:namespace	line:6
+Event	../event.py	/^class Event:$/;"	kind:class	line:4
+MarketEvent	../data_handler/csv_data_handler.py	/^from event import MarketEvent$/;"	kind:namespace	line:6
+MarketEvent	../event.py	/^class MarketEvent(Event):$/;"	kind:class	line:12
+PPRSI	../main.py	/^from strategy.pprsi import PPRSI$/;"	kind:namespace	line:3
+PPRSI	../strategy/pprsi.py	/^class PPRSI(Strategy):$/;"	kind:class	line:12
+PPSR	../custom_indicators.py	/^def PPSR(high, low, close):$/;"	kind:function	line:1
+PPSR	../strategy/pprsi.py	/^from custom_indicators import PPSR$/;"	kind:namespace	line:7
+Path	../data_handler/csv_data_handler.py	/^from pathlib import Path$/;"	kind:namespace	line:9
+Portfolio	../main.py	/^from portfolio import Portfolio$/;"	kind:namespace	line:2
+Portfolio	../portfolio.py	/^class Portfolio:$/;"	kind:class	line:1
+RSI	../strategy/pprsi.py	/^from talib import RSI, EMA$/;"	kind:namespace	line:6
+SignalEvent	../event.py	/^class SignalEvent(Event):$/;"	kind:class	line:22
+SignalEvent	../strategy/pprsi.py	/^from event import SignalEvent$/;"	kind:namespace	line:2
+Strategy	../main.py	/^    Strategy=PPRSI$/;"	kind:variable	line:15
+Strategy	../strategy/pprsi.py	/^from strategy.strategy import Strategy$/;"	kind:namespace	line:1
+Strategy	../strategy/strategy.py	/^class Strategy(metaclass=ABCMeta):$/;"	kind:class	line:4
+Trade	../trade.py	/^class Trade:$/;"	kind:class	line:1
+__init__	../backtest.py	/^    def __init__(self, *, csv_dir, symbol_list, timeframe, DataHandler, Portfolio, Strategy):$/;"	kind:member	line:10
+__init__	../data_handler/csv_data_handler.py	/^    def __init__(self, events, csv_dir, symbol_list, timeframe):$/;"	kind:member	line:13
+__init__	../event.py	/^    def __init__(self):$/;"	kind:member	line:18
+__init__	../event.py	/^    def __init__(self, *, strategy_id=1, symbol, datetime, signal_type, strength=0):$/;"	kind:member	line:27
+__init__	../portfolio.py	/^    def __init__(self, events, data_handler, start_date, initial_capital, pct_stop_loss, pct_take_profit):$/;"	kind:member	line:8
+__init__	../strategy/pprsi.py	/^    def __init__(self, events, data_handler):$/;"	kind:member	line:13
+__init__	../trade.py	/^    def __init__(self):$/;"	kind:member	line:5
+__init__.py	../__init__.py	1;"	kind:file	line:1
+__init__.py	../data_handler/__init__.py	1;"	kind:file	line:1
+__init__.py	../strategy/__init__.py	1;"	kind:file	line:1
+__repr__	../data_handler/csv_data_handler.py	/^    def __repr__(self):$/;"	kind:member	line:27
+__repr__	../portfolio.py	/^    def __repr__(self):$/;"	kind:member	line:30
+__str__	../data_handler/csv_data_handler.py	/^    def __str__(self):$/;"	kind:member	line:30
+__str__	../portfolio.py	/^    def __str__(self):$/;"	kind:member	line:33
+_construct_all_holdings	../portfolio.py	/^    def _construct_all_holdings(self):$/;"	kind:member	line:71
+_construct_all_positions	../portfolio.py	/^    def _construct_all_positions(self):$/;"	kind:member	line:44
+_construct_current_holdings	../portfolio.py	/^    def _construct_current_holdings(self):$/;"	kind:member	line:53
+_construct_current_positions	../portfolio.py	/^    def _construct_current_positions(self):$/;"	kind:member	line:36
+_generate_order	../portfolio.py	/^    def _generate_order(self, signal):$/;"	kind:member	line:139
+_get_new_bar	../data_handler/csv_data_handler.py	/^    def _get_new_bar(self, symbol):$/;"	kind:member	line:66
+_import_symbol_data	../data_handler/csv_data_handler.py	/^    def _import_symbol_data(self):$/;"	kind:member	line:33
+_output_performance	../backtest.py	/^    def _output_performance(self):$/;"	kind:member	line:90
+_run_backtest	../backtest.py	/^    def _run_backtest(self):$/;"	kind:member	line:40
+_update_all_holdings	../portfolio.py	/^    def _update_all_holdings(self, datetime):$/;"	kind:member	line:92
+_update_all_positions	../portfolio.py	/^    def _update_all_positions(self, datetime):$/;"	kind:member	line:80
+abstractmethod	../data_handler/data_handler.py	/^from abc import ABCMeta, abstractmethod$/;"	kind:namespace	line:3
+abstractmethod	../strategy/strategy.py	/^from abc import ABCMeta, abstractmethod$/;"	kind:namespace	line:1
+backtest	../main.py	/^backtest = Backtest($/;"	kind:variable	line:10
+backtest.py	../backtest.py	1;"	kind:file	line:1
+calculate_signals	../strategy/pprsi.py	/^    def calculate_signals(self):$/;"	kind:member	line:25
+calculate_signals	../strategy/strategy.py	/^    def calculate_signals(self):$/;"	kind:member	line:12
+csv_data_handler.py	../data_handler/csv_data_handler.py	1;"	kind:file	line:1
+csv_dir	../main.py	/^    csv_dir='exchange_data',$/;"	kind:variable	line:11
+custom_indicators.py	../custom_indicators.py	1;"	kind:file	line:1
+data_handler.py	../data_handler/data_handler.py	1;"	kind:file	line:1
+datetime	../backtest.py	/^import datetime$/;"	kind:namespace	line:4
+datetime	../data_handler/csv_data_handler.py	/^from datetime import datetime$/;"	kind:namespace	line:7
+datetime	../main.py	/^from datetime import datetime$/;"	kind:namespace	line:6
+event.py	../event.py	1;"	kind:file	line:1
+get_latest_bar	../data_handler/csv_data_handler.py	/^    def get_latest_bar(self, symbol):$/;"	kind:member	line:88
+get_latest_bar	../data_handler/data_handler.py	/^    def get_latest_bar(self, symbol):$/;"	kind:member	line:14
+get_latest_bar_datetime	../data_handler/csv_data_handler.py	/^    def get_latest_bar_datetime(self, symbol):$/;"	kind:member	line:110
+get_latest_bar_datetime	../data_handler/data_handler.py	/^    def get_latest_bar_datetime(self, symbol):$/;"	kind:member	line:28
+get_latest_bar_value	../data_handler/csv_data_handler.py	/^    def get_latest_bar_value(self, symbol, value_type):$/;"	kind:member	line:120
+get_latest_bar_value	../data_handler/data_handler.py	/^    def get_latest_bar_value(self, symbol, val_type):$/;"	kind:member	line:35
+get_latest_bars	../data_handler/csv_data_handler.py	/^    def get_latest_bars(self, symbol, N=1):$/;"	kind:member	line:100
+get_latest_bars	../data_handler/data_handler.py	/^    def get_latest_bars(self, symbol, N=1, M=None):$/;"	kind:member	line:21
+get_latest_bars_values	../data_handler/csv_data_handler.py	/^    def get_latest_bars_values(self, symbol, value_type, N=1):$/;"	kind:member	line:130
+get_latest_bars_values	../data_handler/data_handler.py	/^    def get_latest_bars_values(self, symbol, val_type, N=1, M=None):$/;"	kind:member	line:42
+get_prev_daily_hlc	../helpers.py	/^def get_prev_daily_hlc(latest_datetimes, latest_highs, latest_lows, latest_closes):$/;"	kind:function	line:4
+get_prev_daily_hlc	../strategy/pprsi.py	/^from helpers import get_prev_daily_hlc$/;"	kind:namespace	line:9
+helpers.py	../helpers.py	1;"	kind:file	line:1
+init_trailing_ls	../portfolio.py	/^    def init_trailing_ls(self, open_price, pct_stop_loss, pct_take_profit):$/;"	kind:member	line:158
+main.py	../main.py	1;"	kind:file	line:1
+np	../data_handler/csv_data_handler.py	/^import numpy as np$/;"	kind:namespace	line:3
+np	../helpers.py	/^import numpy as np$/;"	kind:namespace	line:1
+np	../strategy/pprsi.py	/^import numpy as np$/;"	kind:namespace	line:4
+pd	../data_handler/csv_data_handler.py	/^import pandas as pd$/;"	kind:namespace	line:4
+portfolio.py	../portfolio.py	1;"	kind:file	line:1
+pprint	../backtest.py	/^import pprint$/;"	kind:namespace	line:5
+pprsi.py	../strategy/pprsi.py	1;"	kind:file	line:1
+print_function	../backtest.py	/^from __future__ import print_function$/;"	kind:namespace	line:1
+print_function	../data_handler/data_handler.py	/^from __future__ import print_function$/;"	kind:namespace	line:1
+print_function	../event.py	/^from __future__ import print_function$/;"	kind:namespace	line:1
+queue	../backtest.py	/^import queue$/;"	kind:namespace	line:3
+save	../trade.py	/^    def save(self):$/;"	kind:member	line:23
+send_order	../portfolio.py	/^    def send_order(self, event):$/;"	kind:member	line:151
+simulate_trading	../backtest.py	/^    def simulate_trading(self):$/;"	kind:member	line:93
+strategy.py	../strategy/strategy.py	1;"	kind:file	line:1
+symbol_list	../main.py	/^    symbol_list=symbol_list,$/;"	kind:variable	line:12
+symbol_list	../main.py	/^symbol_list = ['BTC-USDT', 'ETH-BTC']$/;"	kind:variable	line:8
+time	../backtest.py	/^from time import time$/;"	kind:namespace	line:6
+timeframe	../main.py	/^    timeframe='1h',$/;"	kind:variable	line:13
+trade.py	../trade.py	1;"	kind:file	line:1
+trades	../trade.py	/^    trades = list()$/;"	kind:variable	line:3
+update_all_positions_holdings	../portfolio.py	/^    def update_all_positions_holdings(self):$/;"	kind:member	line:127
+update_bars	../data_handler/csv_data_handler.py	/^    def update_bars(self):$/;"	kind:member	line:70
+update_bars	../data_handler/data_handler.py	/^    def update_bars(self):$/;"	kind:member	line:49
+update_trailing_sl	../portfolio.py	/^        def update_trailing_sl(current_value):$/;"	kind:function	line:161
