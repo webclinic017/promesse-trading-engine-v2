@@ -6,6 +6,7 @@ import pandas as pd
 from performance import create_sharpe_ratio, create_drawdowns
 
 from event import OrderEvent, FillEvent
+from trade import Trade
 
 
 class Portfolio:
@@ -38,6 +39,8 @@ class Portfolio:
         self.pct_stop_loss = 0.02
         self.pct_take_profit = 0.05
 
+        self.trades = None
+
     def __repr__(self):
         return f'<Portfolio: Initial capital {self.initial_capital}>'
 
@@ -67,6 +70,7 @@ class Portfolio:
         """
         holdings = {
             s: {
+                'open_date': None,
                 'open_price': 0.0,
                 'current_value': 0.0,
                 'is_open': False,
@@ -128,6 +132,7 @@ class Portfolio:
 
         holdings = {
             symbol: {
+                'open_date': None,
                 'open_price': 0.0,
                 'current_value': 0.0,
                 'is_open': False,
@@ -146,6 +151,7 @@ class Portfolio:
 
             holdings[symbol]['current_value'] = market_value
             holdings[symbol]['open_price'] = self.current_holdings[symbol]['open_price']
+            holdings[symbol]['open_date'] = self.current_holdings[symbol]['open_date']
             holdings[symbol]['is_open'] = self.current_holdings[symbol]['is_open']
             holdings['total'] += market_value
 
@@ -229,6 +235,8 @@ class Portfolio:
 
         if fill.direction == 'BUY':
             self.current_holdings[fill.symbol]['current_value'] += cost
+            self.current_holdings[fill.symbol]['open_date'] = self.data_handler.get_latest_bar(
+                fill.symbol).Index
             self.current_holdings[fill.symbol]['open_price'] = cost
             self.current_holdings[fill.symbol]['is_open'] = True
             self.current_holdings[fill.symbol]['trailing_sl'] = self.init_trailing_ls(
@@ -240,12 +248,26 @@ class Portfolio:
             self.current_holdings['cash'] -= (cost + fill.fees)
             self.current_holdings['total'] -= (cost + fill.fees)
 
+            Trade(
+                fill.symbol,
+                self.current_holdings[fill.symbol]['open_date'],
+                cost,
+                fill.fees
+            )
+
         elif fill.direction == 'SELL':
             self.current_holdings[fill.symbol]['current_value'] -= cost
-            self.current_holdings[fill.symbol]['open_price'] = cost
             self.current_holdings[fill.symbol]['is_open'] = False
             self.current_holdings['cash'] += (cost - fill.fees)
             self.current_holdings['total'] += (cost - fill.fees)
+
+            Trade.close(
+                self.current_holdings[fill.symbol]['open_date'],
+                self.data_handler.get_latest_bar(
+                    fill.symbol).Index,
+                cost,
+                fill.fees
+            )
 
         self.current_holdings['fees'] += fill.fees
 
@@ -266,6 +288,15 @@ class Portfolio:
 
         self.equity_curve = curve
 
+    def generate_trade_record(self):
+        trades = pd.DataFrame(Trade.to_dict())
+        trades['duration'] = trades['close_date'] - trades['open_date']
+        trades['returns'] = (trades['close_price'] / trades['open_price']) - 1
+        trades['win_trades'] = trades['returns'] > 0
+        trades['loss_trades'] = trades['returns'] <= 0
+
+        self.trades = trades
+
     def output_summary_stats(self):
         """
         Creates a list of summary statistics for the portfolio.
@@ -278,8 +309,25 @@ class Portfolio:
         drawdown, max_dd, dd_duration = create_drawdowns(pnl)
         self.equity_curve['drawdown'] = drawdown
 
+        trades_avg_duration = floor(
+            self.trades['duration'].mean().total_seconds() / 60)
+        trades_avg_return = self.trades['returns'].mean() * 100
+
+        trades_total_win = self.trades['win_trades'].sum()
+        trades_total_loss = self.trades['loss_trades'].sum()
+        trades_win_loss_ratio = trades_total_win / trades_total_loss
+        trades_win_pct = trades_total_win / len(self.trades) * 100
+        trades_loss_pct = trades_total_loss / len(self.trades) * 100
+
         stats = [("Total Return", "%0.2f%%" %
                   ((total_return - 1.0) * 100.0)),
+                 ("Avg Return (%)", trades_avg_return),
+                 ("Avg Trade Duration (min)", trades_avg_duration),
+                 ("Total win trades", trades_total_win),
+                 ("Total loss trades", trades_total_loss),
+                 ("Win/Loss Ratio", trades_win_loss_ratio),
+                 ("% Wins", trades_win_pct),
+                 ("% Losses", trades_loss_pct),
                  ("Sharpe Ratio", "%0.2f" % sharpe_ratio),
                  ("Max Drawdown", "%0.2f%%" % (max_dd * 100.0)),
                  ("Drawdown Duration", "%d" % dd_duration)]

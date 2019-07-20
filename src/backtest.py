@@ -108,6 +108,7 @@ class Backtest:
         Outputs the strategy performance from the backtest.
         """
         self.portfolio.create_equity_curve_dataframe()
+        self.portfolio.generate_trade_record()
 
         print("Creating summary stats...")
         stats = self.portfolio.output_summary_stats()
