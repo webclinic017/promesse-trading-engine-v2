@@ -12,6 +12,11 @@ pandas = "*"
 jupyter = "*"
 ta-lib = "*"
 matplotlib = "*"
+flask = "*"
+seaborn = "*"
+plotly = "*"
+peakutils = "*"
+ccxt = "*"
 
 [requires]
 python_version = "3.7"
