@@ -17,6 +17,7 @@ seaborn = "*"
 plotly = "*"
 peakutils = "*"
 ccxt = "*"
+asyncio = "*"
 
 [requires]
 python_version = "3.7"

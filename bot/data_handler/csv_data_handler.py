@@ -22,7 +22,7 @@ class CSVDataHandler(DataHandler):
 
         self.continue_backtest = True
 
-        self._import_symbol_data()
+        self._load_symbol_data()
 
     def __repr__(self):
         return f'<CSVDataHandler>'
@@ -30,7 +30,7 @@ class CSVDataHandler(DataHandler):
     def __str__(self):
         return f'CSVDataHandler with {self.timeframe} timeframe'
 
-    def _import_symbol_data(self):
+    def _load_symbol_data(self):
         '''
         It imports historical data from a set of CSV files then prepare them for the backtesting.
         It sets self.symbol_data with all data and init self_latest_symbol_data with empty data.
