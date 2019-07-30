@@ -1,4 +1,14 @@
 import numpy as np
+from pathlib import Path
+import json
+
+
+def load_config():
+    config_path = f'{Path().absolute()}/bot/config.json'
+
+    with open(config_path) as f:
+        config = json.load(f)
+    return config
 
 
 def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, latest_closes):

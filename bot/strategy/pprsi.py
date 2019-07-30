@@ -47,7 +47,7 @@ class PPRSI(Strategy):
 
             latest_closes = self.data_handler.get_latest_bars_values(
                 symbol, 'close', N=self.data_points)
-            current_close = latest_closes[-1]
+            current_close = self.data_handler.current_price(symbol)
 
             # Init signal infos
             signal_datetime = self.data_handler.get_latest_bar(symbol).Index

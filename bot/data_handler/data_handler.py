@@ -53,3 +53,10 @@ class DataHandler(metaclass=ABCMeta):
         close, volume).
         """
         raise NotImplementedError("Should implement update_bars()")
+
+    @abstractmethod
+    def current_price(self):
+        """
+        Returns the current close price in Backtesting and current ask in live
+        """
+        raise NotImplementedError("Should implement current_price()")

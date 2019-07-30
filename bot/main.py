@@ -1,28 +1,37 @@
-from data_handler.live_data_handler import LiveDataHandler
-from data_handler.csv_data_handler import CSVDataHandler
 from portfolio import Portfolio
-from strategy.bbrsi import BBRSI
+from strategy.pprsi import PPRSI
 from execution_handler import SimulatedExecutionHandler
-from backtest import Backtest
+from engine import Engine
 
 from datetime import datetime
+from helpers import load_config
 
-data = LiveDataHandler('events', 'binance', ['BTC/USDT', 'ETH/USDT'], '1h')
-print(data.get_latest_bars_values('BTC/USDT', 'open', N=10))
+config = load_config()
 
+if config['run_mode'] == 'backtest':
+    from data_handler.csv_data_handler import CSVDataHandler as DataHandler
+    heartbeat = 0
+    start_date = datetime(2017, 1, 1)
 
-# symbol_list = ['ETH-BTC']
+else:
+    from data_handler.live_data_handler import LiveDataHandler as DataHandler
+    heartbeat = config['heartbeat']
+    start_date = datetime.utcnow()
 
-# backtest = Backtest(
-#     csv_dir='exchange_data',
-#     symbol_list=symbol_list,
-#     timeframe='1h',
-#     start_date=datetime(2017, 7, 18),
-#     initial_capital=1,
-#     DataHandler=CSVDataHandler,
-#     Portfolio=Portfolio,
-#     Strategy=BBRSI,
-#     ExecutionHandler=SimulatedExecutionHandler
-# )
+symbol_list = config['symbol_list']
+timeframe = config['timeframe']
+initial_capital = config['initial_capital']
 
-# backtest.simulate_trading()
+engine = Engine(
+    symbol_list=symbol_list,
+    timeframe=timeframe,
+    heartbeat=heartbeat,
+    start_date=start_date,
+    initial_capital=initial_capital,
+    DataHandler=DataHandler,
+    Portfolio=Portfolio,
+    Strategy=PPRSI,
+    ExecutionHandler=SimulatedExecutionHandler
+)
+
+engine.start()

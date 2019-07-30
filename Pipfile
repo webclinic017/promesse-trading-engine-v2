@@ -18,6 +18,8 @@ plotly = "*"
 peakutils = "*"
 ccxt = "*"
 asyncio = "*"
+redis = "*"
+tabulate = "*"
 
 [requires]
 python_version = "3.7"

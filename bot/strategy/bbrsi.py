@@ -86,7 +86,6 @@ class BBRSI(Strategy):
 
             # Buy Signal conditions
             if self.position[symbol] == 'OUT':
-
                 if len(lows_peak) >= 2 and len(rsis_peak_lows) >= 2 and lows_peak[-2] > lows_peak[-1] and rsis_peak_lows[-2] < rsis_peak_lows[-1] and current_low <= lower[-1]:
                     print(f'{symbol} - LONG: {signal_datetime}')
                     signal_type = 'LONG'

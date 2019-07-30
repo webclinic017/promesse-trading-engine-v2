@@ -10,11 +10,12 @@ from pathlib import Path
 
 
 class CSVDataHandler(DataHandler):
-    def __init__(self, events, csv_dir, symbol_list, timeframe):
+    def __init__(self, events, symbol_list, timeframe):
         self.events = events  # Event queue
 
-        self.csv_dir = csv_dir
-        self.symbol_list = symbol_list
+        self.csv_dir = 'exchange_data'
+        self.symbol_list = ['-'.join(symbol.split('/'))
+                            for symbol in symbol_list]
         self.timeframe = timeframe
 
         self.symbol_data = dict()
@@ -122,6 +123,8 @@ class CSVDataHandler(DataHandler):
         It returns the latest bar value (open, high, low, close or volume) of a given symbol
         """
         try:
+            if value_type == 'datetime':
+                return getattr(self.latest_symbol_data[symbol][-1], 'Index')
             return getattr(self.latest_symbol_data[symbol][-1], value_type)
         except KeyError:
             print("That symbol is not available in the historical data set.")
@@ -138,4 +141,12 @@ class CSVDataHandler(DataHandler):
             print("That symbol is not available in the historical data set.")
             raise
         else:
+            if value_type == 'datetime':
+                return np.array([getattr(bar, 'Index') for bar in bars])
             return np.array([getattr(bar, value_type) for bar in bars])
+
+    def current_price(self, symbol):
+        """
+        It retuns latest close price
+        """
+        return self.get_latest_bar_value(symbol, 'close')

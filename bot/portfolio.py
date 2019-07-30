@@ -7,8 +7,12 @@ from performance import create_sharpe_ratio, create_drawdowns
 
 from event import OrderEvent, FillEvent
 from trade import Trade
+from helpers import load_config
 
 from pathlib import Path
+import redis
+
+from talib import ATR
 
 
 class Portfolio:
@@ -19,6 +23,7 @@ class Portfolio:
     """
 
     def __init__(self, events, data_handler, start_date, initial_capital):
+        self.config = load_config()
         self.events = events
 
         self.data_handler = data_handler
@@ -35,13 +40,15 @@ class Portfolio:
         self.all_holdings = self._construct_all_holdings()
 
         # Money Management
-        self.pct_capital_risk = 1
+        self.pct_capital_risk = 0.3
 
         # Risk Management
-        self.pct_stop_loss = 0.01
-        self.pct_take_profit = 0.03
+        self.pct_stop_loss = 0.02
+        self.pct_take_profit = 0.04
 
         self.trades = None
+
+        self.redis = redis.Redis()
 
     def __repr__(self):
         return f'<Portfolio: Initial capital {self.initial_capital}>'
@@ -95,7 +102,7 @@ class Portfolio:
 
         return [holdings]
 
-    def init_trailing_ls(self, symbol, open_price, pct_sl, pct_tp):
+    def init_trailing_sl(self, symbol, open_price, pct_sl, pct_tp):
         trailing_dict = dict()
         trailing_dict[symbol] = open_price*(1-pct_sl)
 
@@ -148,7 +155,7 @@ class Portfolio:
 
         for symbol in self.symbol_list:
             current_position = self.current_positions[symbol]
-            current_price = self.data_handler.get_latest_bar(symbol).close
+            current_price = self.data_handler.current_price(symbol)
             market_value = current_position * current_price
 
             holdings[symbol]['current_value'] = market_value
@@ -158,6 +165,23 @@ class Portfolio:
             holdings['total'] += market_value
 
         self.all_holdings.append(holdings)
+
+        if self.config['run_mode'] != 'backtest':
+            with self.redis.pipeline() as pipe:
+                pipe.mset({
+                    "cash": holdings['cash'],
+                    "total": holdings['total']
+                })
+
+                for symbol in self.symbol_list:
+                    is_open = holdings[symbol]['is_open']
+                    pipe.hmset(f'symbol:{symbol}', {
+                        'is_open': int(holdings[symbol]['is_open']),
+                        'open_price': holdings[symbol]['open_price'],
+                        'open_date': holdings[symbol]['open_date'].isoformat() if is_open else '0',
+                        'current_value': holdings[symbol]['current_value']
+                    })
+                pipe.execute()
 
     def update_all_positions_holdings(self):
         """
@@ -184,7 +208,7 @@ class Portfolio:
         order_type = 'MKT'
 
         current_quantity = self.current_positions[symbol]
-        fill_cost = self.data_handler.get_latest_bar(symbol).close
+        fill_cost = self.data_handler.current_price(symbol)
 
         # Define the position sizing of the order.
         # TODO: kelly criterion
@@ -237,11 +261,11 @@ class Portfolio:
 
         if fill.direction == 'BUY':
             self.current_holdings[fill.symbol]['current_value'] += cost
-            self.current_holdings[fill.symbol]['open_date'] = self.data_handler.get_latest_bar(
-                fill.symbol).Index
+            self.current_holdings[fill.symbol]['open_date'] = self.data_handler.get_latest_bar_value(
+                fill.symbol, 'datetime')
             self.current_holdings[fill.symbol]['open_price'] = cost
             self.current_holdings[fill.symbol]['is_open'] = True
-            self.current_holdings[fill.symbol]['trailing_sl'] = self.init_trailing_ls(
+            self.current_holdings[fill.symbol]['trailing_sl'] = self.init_trailing_sl(
                 fill.symbol,
                 cost,
                 self.pct_stop_loss,
@@ -267,8 +291,8 @@ class Portfolio:
             Trade.close(
                 self.current_holdings[fill.symbol]['open_date'],
                 fill.fill_cost,
-                self.data_handler.get_latest_bar(
-                    fill.symbol).Index,
+                self.data_handler.get_latest_bar_value(
+                    fill.symbol, 'datetime'),
                 cost,
                 fill.fees
             )
@@ -284,7 +308,6 @@ class Portfolio:
         """
         Creates a pandas DataFrame from the all_holdings list of dictionaries.
         """
-
         curve = pd.DataFrame(self.all_holdings)
         curve.set_index('datetime', inplace=True)
         curve['returns'] = curve['total'].pct_change()
