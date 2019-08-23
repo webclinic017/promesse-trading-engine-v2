@@ -76,7 +76,7 @@ class BBRSI(Strategy):
             if self.position[symbol] == 'OUT':
                 trend = detect_div(closes, rsis)
 
-                if trend == 'bull':
+                if trend == 'bull' and current_close <= lower[-1]:
                     print(f'{symbol} - LONG: {signal_datetime}')
                     signal_type = 'LONG'
 
