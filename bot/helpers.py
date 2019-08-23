@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from pathlib import Path
 import json
 
@@ -9,6 +10,63 @@ def load_config():
     with open(config_path) as f:
         config = json.load(f)
     return config
+
+
+def parse_trades(filepath):
+    trades = pd.read_csv(filepath, header=0,
+                         parse_dates=True, index_col=0)
+    trades['open_date'] = pd.to_datetime(trades['open_date'])
+    trades['close_date'] = pd.to_datetime(trades['close_date'])
+
+    return trades
+
+
+def parse_ticker(filepath):
+    columns = ['datetime', 'open', 'high', 'low', 'close', 'volume']
+    ticker = pd.read_csv(filepath,
+                         header=None, index_col=0, names=columns)
+    ticker.index = pd.to_datetime(ticker.index, unit='ms')
+    ticker = ticker.drop_duplicates()
+
+    return ticker
+
+
+def init_trailing_long(open_price, pct_sl, pct_tp):
+    trailing = open_price*(1-pct_sl)
+
+    def update_sl(current_price):
+        nonlocal trailing
+
+        returns = (current_price / open_price) - 1
+        current_trailing = 0.0
+
+        if returns >= pct_tp:
+            current_trailing = current_price*(1-pct_sl)
+
+        trailing = max(trailing, current_trailing)
+
+        return trailing
+
+    return update_sl
+
+
+def init_trailing_short(open_price, pct_sl, pct_tp):
+    trailing = open_price*(1+pct_sl)
+
+    def update_sl(current_price):
+        nonlocal trailing
+
+        returns = (open_price / current_price) - 1
+        current_trailing = trailing
+
+        if returns >= pct_tp:
+            current_trailing = current_price*(1+pct_sl)
+
+        trailing = min(trailing, current_trailing)
+
+        return trailing
+
+    return update_sl
 
 
 def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, latest_closes):
