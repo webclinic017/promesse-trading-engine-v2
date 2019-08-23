@@ -14,7 +14,7 @@ class DryAnalytics(AbstractAnalytics):
         self.config = load_config()
         self.symbol_list = self.config['symbol_list']
 
-        self.trades = {
+        self.open_trades = {
             symbol: {
                 'is_open': False,
                 'open_since': None,
@@ -42,7 +42,7 @@ class DryAnalytics(AbstractAnalytics):
 
     def print_balance(self):
         balance = self.balance()
-        columns = ['Available', 'Total', 'Pending']
+        columns = ('Available', 'Total', 'Pending')
 
         print(tabulate([[balance["cash"], balance["total"],
                          balance["pending"]]], headers=columns))
@@ -70,7 +70,7 @@ class DryAnalytics(AbstractAnalytics):
         columns = ['Current Symbol', 'Open Since',
                    'Open Price', 'Current Value', 'Current Profit (%)']
         table = []
-        for trade in self.trades:
+        for trade in self.open_trades:
             if trade.is_open:
                 row = [
                     trade['symbol'],
@@ -85,7 +85,7 @@ class DryAnalytics(AbstractAnalytics):
 
     def profit(self):
         """
-        Display a summary of profit/loss from close trades and some stats of performance
+        Display a summary of profit/loss from close/all trades
         """
         pass
 

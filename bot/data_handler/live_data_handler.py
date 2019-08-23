@@ -133,16 +133,16 @@ class LiveDataHandler(DataHandler):
                                  for bar in bars])
             return np.array([bar[bars_map[value_type]] for bar in bars])
 
-    def current_price(self, symbol):
+    def current_price(self, symbol, side='asks'):
         """
         It retuns current ask price
         """
         counter = 2
         try:
-            return self.exchange.fetch_order_book(symbol)['asks'][0][0]
+            return self.exchange.fetch_order_book(symbol)[side][0][0]
         except RequestTimeout:
             if counter != 0:
-                self.get_ask(symbol)
+                self.current_price(symbol)
                 counter -= 1
             else:
                 return 0

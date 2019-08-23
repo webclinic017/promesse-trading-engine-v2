@@ -18,7 +18,7 @@ class BBRSI(Strategy):
 
         self.portfolio = portfolio
 
-        self.data_points = 150
+        self.data_points = 50
         self.counter = 0
 
         self.rsi_window = 14
@@ -72,10 +72,9 @@ class BBRSI(Strategy):
                 latest_highs, thres=0.95, min_dist=1)
 
             index_rsi_lows = peakutils.indexes(-rsis,
-                                               thres=0., min_dist=1)
+                                               thres=0.95, min_dist=1)
             index_rsi_highs = peakutils.indexes(rsis,
                                                 thres=0.95, min_dist=1)
-
             lows_peak = latest_lows[index_lows]
             highs_peak = latest_highs[index_highs]
             rsis_peak_lows = rsis[index_rsi_lows]

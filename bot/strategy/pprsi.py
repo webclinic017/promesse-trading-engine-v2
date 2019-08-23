@@ -8,7 +8,7 @@ import numpy as np
 from talib import RSI, EMA
 from custom_indicators import PPSR
 
-from helpers import get_prev_daily_hlc
+from helpers import get_prev_daily_hlc, init_trailing_long, init_trailing_short
 
 
 class PPRSI(Strategy):
@@ -19,13 +19,12 @@ class PPRSI(Strategy):
         self.symbol_list = self.data_handler.symbol_list
 
         self.portfolio = portfolio
+        self.timeframe = self.data_handler.timeframe
 
         self.data_points = 50
         self.counter = 0
 
-        self.rsi_window = 14
-        self.ma_window = 5
-
+        self.trailing = self._calculate_initial_trailing()
         self.position = self._calculate_initial_position()
         self.pullback = self._calculate_initial_pullback()
 
@@ -36,6 +35,10 @@ class PPRSI(Strategy):
     def _calculate_initial_pullback(self):
         pullback = dict((s, 0) for s in self.symbol_list)
         return pullback
+
+    def _calculate_initial_trailing(self):
+        trailing = dict((s, None) for s in self.symbol_list)
+        return trailing
 
     def calculate_signals(self):
         for symbol in self.symbol_list:
@@ -58,17 +61,20 @@ class PPRSI(Strategy):
 
                 # Init OHLCV bars and indicators
                 latest_datetimes = self.data_handler.get_latest_bars_values(
-                    symbol, 'Index', N=self.data_points)
+                    symbol, 'datetime', N=self.data_points)
                 latest_highs = self.data_handler.get_latest_bars_values(
                     symbol, 'high', N=self.data_points)
+
+                latest_opens = self.data_handler.get_latest_bars_values(
+                    symbol, 'open', N=self.data_points)
+                current_open = latest_opens[-1]
+
                 latest_lows = self.data_handler.get_latest_bars_values(
                     symbol, 'low', N=self.data_points)
 
-                current_ema = EMA(latest_closes, timeperiod=self.ma_window)[-1]
-
                 pp, s1, s2, s3, r1, r2, r3 = PPSR(
                     *get_prev_daily_hlc(
-                        '1h',
+                        self.timeframe,
                         latest_datetimes,
                         latest_highs,
                         latest_lows,
@@ -76,15 +82,18 @@ class PPRSI(Strategy):
                     )
                 )
 
-                if current_close > pp and current_close > current_ema and self.pullback[symbol] == 0:
-                    print('↗↗ PP BULLISH TREND')
+                rsi = RSI(latest_closes)[-1]
+                ma = EMA(latest_closes, timeperiod=3)[-1]
+
+                if current_close < pp and current_close and ma and rsi < 70 and self.pullback[symbol] == 0:
+                    print('↗↗ PP BEARISH TREND')
                     self.pullback[symbol] = 1
                     break
 
-                if current_close <= pp and self.pullback[symbol] == 1:
+                if current_close >= pp and self.pullback[symbol] == 1:
                     print('↗↗ PP PULL BACK')
-                    print(f'{symbol} - LONG: {signal_datetime}')
-                    signal_type = 'LONG'
+                    print(f'{symbol} - SHORT: {signal_datetime}')
+                    signal_type = 'SHORT'
 
                     signal = SignalEvent(
                         symbol=symbol,
@@ -93,18 +102,21 @@ class PPRSI(Strategy):
                         strength=1
                     )
                     self.events.put(signal)
-                    self.position[symbol] = 'IN'
+                    self.position[symbol] = 'SHORT'
                     self.pullback[symbol] = 0
+                    self.trailing[symbol] = init_trailing_short(
+                        current_close,
+                        pct_sl=0.04,
+                        pct_tp=0.08
+                    )
                     break
 
-            elif self.position[symbol] == 'IN':
-                current_value = current_close * \
-                    self.portfolio.current_positions[symbol]
+            elif self.position[symbol] == 'SHORT':
+                trailing_ls = self.trailing[symbol](current_close)
 
-                trailing_ls = self.portfolio.current_holdings[symbol]['trailing_sl'](
-                    current_value)
-
-                if current_value <= trailing_ls:
+                print(
+                    self.portfolio.current_holdings[symbol]['open_price'], current_close, trailing_ls)
+                if current_close >= trailing_ls:
                     print(f'{symbol} - STOP LOSS: {signal_datetime}')
                     signal_type = 'EXIT'
 

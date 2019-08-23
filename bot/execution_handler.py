@@ -58,3 +58,21 @@ class SimulatedExecutionHandler(ExecutionHandler):
                 event.fill_cost
             )
             self.events.put(fill_event)
+
+
+class CCXTExecutionHandler(ExecutionHandler):
+    """
+    Implement a live execution handler using CCXT library
+    """
+
+    def __init__(self, events):
+        """
+        Initialises the handler, setting the event queues up internally.
+        Parameters:
+          events: The Queue of Event objects.
+        """
+        self.events = events
+
+    def execute_order(self, event):
+        if event.type == 'ORDER':
+            pass

@@ -12,8 +12,6 @@ from helpers import load_config
 from pathlib import Path
 import redis
 
-from talib import ATR
-
 
 class Portfolio:
     """
@@ -40,11 +38,11 @@ class Portfolio:
         self.all_holdings = self._construct_all_holdings()
 
         # Money Management
-        self.pct_capital_risk = 0.3
+        self.pct_capital_risk = 1
 
         # Risk Management
         self.pct_stop_loss = 0.02
-        self.pct_take_profit = 0.04
+        self.pct_take_profit = 0.05
 
         self.trades = None
 
@@ -82,8 +80,7 @@ class Portfolio:
                 'open_date': None,
                 'open_price': 0.0,
                 'current_value': 0.0,
-                'is_open': False,
-                'trailing_sl': 0.0
+                'is_open': False
             }
             for s in self.symbol_list
         }
@@ -101,22 +98,6 @@ class Portfolio:
         holdings['datetime'] = self.start_date
 
         return [holdings]
-
-    def init_trailing_sl(self, symbol, open_price, pct_sl, pct_tp):
-        trailing_dict = dict()
-        trailing_dict[symbol] = open_price*(1-pct_sl)
-
-        def update_sl(current_value):
-            returns = (current_value / open_price) - 1
-            current_trailing_sl = 0.0
-
-            if returns >= pct_tp:
-                current_trailing_sl = current_value*(1-pct_sl)
-            trailing_dict[symbol] = max(
-                trailing_dict[symbol], current_trailing_sl)
-            return trailing_dict[symbol]
-
-        return update_sl
 
     def _update_all_positions(self, datetime):
         """
@@ -144,8 +125,7 @@ class Portfolio:
                 'open_date': None,
                 'open_price': 0.0,
                 'current_value': 0.0,
-                'is_open': False,
-                'trailing_sl': 0.0
+                'is_open': False
             }
             for symbol in self.symbol_list
         }
@@ -265,12 +245,6 @@ class Portfolio:
                 fill.symbol, 'datetime')
             self.current_holdings[fill.symbol]['open_price'] = cost
             self.current_holdings[fill.symbol]['is_open'] = True
-            self.current_holdings[fill.symbol]['trailing_sl'] = self.init_trailing_sl(
-                fill.symbol,
-                cost,
-                self.pct_stop_loss,
-                self.pct_take_profit
-            )
             self.current_holdings['cash'] -= (cost + fill.fees)
             self.current_holdings['total'] -= (cost + fill.fees)
 
