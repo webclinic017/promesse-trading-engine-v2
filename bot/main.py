@@ -1,5 +1,5 @@
 from portfolio import Portfolio
-from strategy.pprsi import PPRSI
+from strategy.bbrsi import BBRSI
 from execution_handler import SimulatedExecutionHandler
 from engine import Engine
 
@@ -30,7 +30,7 @@ engine = Engine(
     initial_capital=initial_capital,
     DataHandler=DataHandler,
     Portfolio=Portfolio,
-    Strategy=PPRSI,
+    Strategy=BBRSI,
     ExecutionHandler=SimulatedExecutionHandler
 )
 

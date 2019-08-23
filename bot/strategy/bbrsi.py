@@ -6,7 +6,8 @@ import queue
 import numpy as np
 
 from talib import RSI, EMA, BBANDS
-import peakutils
+
+from helpers import init_trailing_long, detect_div
 
 
 class BBRSI(Strategy):
@@ -18,13 +19,14 @@ class BBRSI(Strategy):
 
         self.portfolio = portfolio
 
-        self.data_points = 50
+        self.data_points = 100
         self.counter = 0
 
         self.rsi_window = 14
-        self.ma_window = 5
+        self.ma_window = 20
 
         self.position = self._calculate_initial_position()
+        self.trailing = self._calculate_initial_trailing()
 
         self.is_reversal = self._calculate_initial_reversal()
 
@@ -36,6 +38,10 @@ class BBRSI(Strategy):
         position = dict((s, 0) for s in self.symbol_list)
         return position
 
+    def _calculate_initial_trailing(self):
+        trailing = dict((s, None) for s in self.symbol_list)
+        return trailing
+
     def calculate_signals(self):
         for symbol in self.symbol_list:
 
@@ -44,48 +50,33 @@ class BBRSI(Strategy):
                 self.counter += 1
                 break
 
-            latest_closes = self.data_handler.get_latest_bars_values(
-                symbol, 'close', N=self.data_points)
-            current_close = latest_closes[-1]
-
             # Init signal infos
             signal_datetime = self.data_handler.get_latest_bar(symbol).Index
             signal_type = ''
 
             # Init OHLCV bars and indicators
-            latest_datetimes = self.data_handler.get_latest_bars_values(
-                symbol, 'Index', N=self.data_points)
-            latest_highs = self.data_handler.get_latest_bars_values(
+            closes = self.data_handler.get_latest_bars_values(
+                symbol, 'close', N=self.data_points)
+            highs = self.data_handler.get_latest_bars_values(
                 symbol, 'high', N=self.data_points)
-            latest_lows = self.data_handler.get_latest_bars_values(
+            lows = self.data_handler.get_latest_bars_values(
                 symbol, 'low', N=self.data_points)
 
-            current_high = latest_highs[-1]
-            current_low = latest_lows[-1]
+            current_close = closes[-1]
 
-            rsis = RSI(latest_closes, timeperiod=self.rsi_window)
-            rsis = rsis[~np.isnan(rsis)]
+            hlc = (closes + highs + lows) / 3
 
-            index_lows = peakutils.indexes(
-                -latest_lows, thres=0.95, min_dist=1)
-            index_highs = peakutils.indexes(
-                latest_highs, thres=0.95, min_dist=1)
-
-            index_rsi_lows = peakutils.indexes(-rsis,
-                                               thres=0.95, min_dist=1)
-            index_rsi_highs = peakutils.indexes(rsis,
-                                                thres=0.95, min_dist=1)
-            lows_peak = latest_lows[index_lows]
-            highs_peak = latest_highs[index_highs]
-            rsis_peak_lows = rsis[index_rsi_lows]
-            rsis_peak_highs = rsis[index_rsi_highs]
+            rsis = RSI(closes, timeperiod=self.rsi_window)
+            # rsis = rsis[~np.isnan(rsis)]
 
             upper, middle, lower = BBANDS(
-                latest_closes, timeperiod=self.ma_window, nbdevup=3, nbdevdn=3)
+                hlc, timeperiod=self.ma_window, nbdevup=2, nbdevdn=2)
 
             # Buy Signal conditions
             if self.position[symbol] == 'OUT':
-                if len(lows_peak) >= 2 and len(rsis_peak_lows) >= 2 and lows_peak[-2] > lows_peak[-1] and rsis_peak_lows[-2] < rsis_peak_lows[-1] and current_low <= lower[-1]:
+                trend = detect_div(closes, rsis)
+
+                if trend == 'bull':
                     print(f'{symbol} - LONG: {signal_datetime}')
                     signal_type = 'LONG'
 
@@ -97,16 +88,17 @@ class BBRSI(Strategy):
                     )
                     self.events.put(signal)
                     self.position[symbol] = 'IN'
+                    self.trailing[symbol] = init_trailing_long(
+                        current_close,
+                        pct_sl=0.05,
+                        pct_tp=0.1
+                    )
                     break
 
             elif self.position[symbol] == 'IN':
-                current_value = current_close * \
-                    self.portfolio.current_positions[symbol]
+                trailing_ls = self.trailing[symbol](current_close)
 
-                trailing_ls = self.portfolio.current_holdings[symbol]['trailing_sl'](
-                    current_value)
-
-                if current_value <= trailing_ls:
+                if current_close <= trailing_ls:
                     print(f'{symbol} - STOP LOSS: {signal_datetime}')
                     signal_type = 'EXIT'
 
