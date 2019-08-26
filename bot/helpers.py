@@ -69,7 +69,7 @@ def init_trailing_short(open_price, pct_sl, pct_tp):
     return update_sl
 
 
-def detect_div(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_prominence=2):
+def detect_div_v0(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_prominence=2):
     from scipy.signal import find_peaks
     # calculating peaks indices
     peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
@@ -111,6 +111,36 @@ def detect_div(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_pro
             if (ref_price[i]-ref_price[j]) >= 0 and (ref_rsi[i]-ref_rsi[j]) <= 0:
                 # bearish_div.append([peaks_price[i],peaks_price[j]])
                 return "bear"
+
+def detect_div_v1(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_prominence=2):
+    from scipy.signal import find_peaks
+    # calculating peaks indices
+    peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
+    peaks_rsi, _ = find_peaks(rsi_set, prominence=rsi_pk_prominence)
+    # calculating negative peaks indices
+    npeaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
+    npeaks_rsi, _ = find_peaks(-rsi_set, prominence=rsi_pk_prominence)
+
+    # defining window size
+    n_window = nwindow
+
+    # Detecting bearish divergences
+    bearish_div = list()
+    bullish_div = list()
+    ref_price = list()  # positive peaks in price
+    ref_rsi = list()  # positive peaks in rsi
+    nref_price = list()  # negative peaks in price
+    nref_rsi = list()  # negative peaks in rsi
+
+    for ni, nitem in enumerate(npeaks_price):
+        nref_price.append(price_set[nitem])
+        nref_rsi.append(rsi_set[nitem])
+    
+    for nj in range(len(nref_price)):
+        # print(ni,nj,ni-nj)
+        if (price_set[-1]-nref_price[nj]) <= 0 and (rsi_set[-1]-nref_rsi[nj]) >= 0:
+            #bullish_div.append([npeaks_price[ni],npeaks_price[nj]])
+            return "bull"
 
 
 def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, latest_closes):
