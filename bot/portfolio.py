@@ -40,10 +40,6 @@ class Portfolio:
         # Money Management
         self.pct_capital_risk = 1
 
-        # Risk Management
-        self.pct_stop_loss = 0.02
-        self.pct_take_profit = 0.05
-
         self.trades = None
 
         self.redis = redis.Redis()
@@ -80,7 +76,9 @@ class Portfolio:
                 'open_date': None,
                 'open_price': 0.0,
                 'current_value': 0.0,
-                'is_open': False
+                'is_open': False,
+                'exposition': 0.0,
+                'direction': 'OUT'
             }
             for s in self.symbol_list
         }
@@ -125,7 +123,9 @@ class Portfolio:
                 'open_date': None,
                 'open_price': 0.0,
                 'current_value': 0.0,
-                'is_open': False
+                'is_open': False,
+                'exposition': 0.0,
+                'direction': 'OUT'
             }
             for symbol in self.symbol_list
         }
@@ -139,10 +139,17 @@ class Portfolio:
             market_value = current_position * current_price
 
             holdings[symbol]['current_value'] = market_value
+            holdings[symbol]['exposition'] = self.current_holdings[symbol]['exposition']
             holdings[symbol]['open_price'] = self.current_holdings[symbol]['open_price']
             holdings[symbol]['open_date'] = self.current_holdings[symbol]['open_date']
+            holdings[symbol]['direction'] = self.current_holdings[symbol]['direction']
             holdings[symbol]['is_open'] = self.current_holdings[symbol]['is_open']
-            holdings['total'] += market_value
+
+            if holdings[symbol]['direction'] == 'SHORT':
+                holdings['total'] += (holdings[symbol]
+                                      ['exposition'] - market_value)
+            else:
+                holdings['total'] += market_value
 
         self.all_holdings.append(holdings)
 
@@ -205,6 +212,16 @@ class Portfolio:
             order = OrderEvent(symbol, order_type,
                                order_quantity, fill_cost, 'SELL')
 
+        if direction == 'SHORT' and current_quantity == 0:
+            order_quantity = position_size / fill_cost
+            order = OrderEvent(symbol, order_type,
+                               order_quantity, fill_cost, 'SHORTSELL')
+
+        if direction == 'EXITSHORT' and current_quantity > 0:
+            order_quantity = current_quantity
+            order = OrderEvent(symbol, order_type,
+                               order_quantity, fill_cost, 'SHORTCOVER')
+
         return order
 
     def send_order(self, event):
@@ -223,9 +240,9 @@ class Portfolio:
           fill: The Fill object to update the positions with.
         """
         fill_dir = 0
-        if fill.direction == 'BUY':
+        if fill.direction == 'BUY' or fill.direction == 'SHORTSELL':
             fill_dir = 1
-        elif fill.direction == 'SELL':
+        elif fill.direction == 'SELL' or fill.direction == 'SHORTCOVER':
             fill_dir = -1
 
         self.current_positions[fill.symbol] += fill_dir*fill.quantity
@@ -245,11 +262,13 @@ class Portfolio:
                 fill.symbol, 'datetime')
             self.current_holdings[fill.symbol]['open_price'] = cost
             self.current_holdings[fill.symbol]['is_open'] = True
+            self.current_holdings[fill.symbol]['direction'] = 'LONG'
             self.current_holdings['cash'] -= (cost + fill.fees)
             self.current_holdings['total'] -= (cost + fill.fees)
 
             Trade(
                 fill.symbol,
+                'LONG',
                 fill.fill_cost,
                 self.current_holdings[fill.symbol]['open_date'],
                 cost,
@@ -261,6 +280,46 @@ class Portfolio:
             self.current_holdings[fill.symbol]['is_open'] = False
             self.current_holdings['cash'] += (cost - fill.fees)
             self.current_holdings['total'] += (cost - fill.fees)
+
+            Trade.close(
+                self.current_holdings[fill.symbol]['open_date'],
+                fill.fill_cost,
+                self.data_handler.get_latest_bar_value(
+                    fill.symbol, 'datetime'),
+                cost,
+                fill.fees
+            )
+
+        elif fill.direction == 'SHORTSELL':
+            self.current_holdings[fill.symbol]['current_value'] += cost
+            self.current_holdings[fill.symbol]['open_date'] = self.data_handler.get_latest_bar_value(
+                fill.symbol, 'datetime')
+            self.current_holdings[fill.symbol]['open_price'] = cost
+            self.current_holdings[fill.symbol]['is_open'] = True
+            self.current_holdings['cash'] -= fill.fees
+            self.current_holdings['total'] -= fill.fees
+            self.current_holdings[fill.symbol]['exposition'] = self.current_holdings[fill.symbol]['open_price']
+            self.current_holdings[fill.symbol]['direction'] = 'SHORT'
+
+            Trade(
+                fill.symbol,
+                'SHORT',
+                fill.fill_cost,
+                self.current_holdings[fill.symbol]['open_date'],
+                cost,
+                fill.fees
+            )
+
+        elif fill.direction == 'SHORTCOVER':
+            self.current_holdings[fill.symbol]['current_value'] -= cost
+            self.current_holdings[fill.symbol]['is_open'] = False
+            self.current_holdings['cash'] += (
+                self.current_holdings[fill.symbol]['exposition'] - cost) - fill.fees
+            self.current_holdings['total'] += (
+                self.current_holdings[fill.symbol]['exposition'] - cost) - fill.fees
+            self.current_holdings[fill.symbol]['open_price'] = 0
+            self.current_holdings[fill.symbol]['exposition'] = 0
+            self.current_holdings[fill.symbol]['direction'] = 'OUT'
 
             Trade.close(
                 self.current_holdings[fill.symbol]['open_date'],
@@ -292,9 +351,15 @@ class Portfolio:
     def generate_trade_record(self):
         trades = pd.DataFrame(Trade.to_dict())
         trades['duration'] = trades['close_date'] - trades['open_date']
-        trades['returns'] = (trades['close_price'] / trades['open_price']) - 1
-        trades['win_trades'] = trades['returns'] > 0
-        trades['loss_trades'] = trades['returns'] <= 0
+        trades['returns_long'] = (trades.loc[trades['direction'] == 'LONG', 'close_price'] /
+                                  trades.loc[trades['direction'] == 'LONG', 'open_price']) - 1
+        trades['returns_short'] = (
+            trades.loc[trades['direction'] == 'SHORT', 'open_price'] / trades.loc[trades['direction'] == 'SHORT', 'close_price']) - 1
+
+        trades['win_trades_long'] = trades['returns_long'] > 0
+        trades['loss_trades_long'] = trades['returns_long'] <= 0
+        trades['win_trades_short'] = trades['returns_short'] > 0
+        trades['loss_trades_short'] = trades['returns_short'] <= 0
 
         self.trades = trades
 
@@ -312,10 +377,13 @@ class Portfolio:
 
         trades_avg_duration = floor(
             self.trades['duration'].mean().total_seconds() / 60)
-        trades_avg_return = self.trades['returns'].mean() * 100
+        trades_avg_return = (self.trades['returns_long'].mean(
+        ) + self.trades['returns_short'].mean()) * 100
 
-        trades_total_win = self.trades['win_trades'].sum()
-        trades_total_loss = self.trades['loss_trades'].sum()
+        trades_total_win = self.trades['win_trades_long'].sum(
+        ) + self.trades['win_trades_short'].sum()
+        trades_total_loss = self.trades['loss_trades_short'].sum(
+        ) + self.trades['loss_trades_long'].sum()
         trades_win_loss_ratio = trades_total_win / trades_total_loss
         total_trades = len(self.trades)
         trades_win_pct = trades_total_win / total_trades * 100
