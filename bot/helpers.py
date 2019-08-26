@@ -69,7 +69,47 @@ def init_trailing_short(open_price, pct_sl, pct_tp):
     return update_sl
 
 
+<<<<<<< HEAD
 def detect_div_v0(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_prominence=2):
+=======
+def detect_bull_div(price_set, rsi_set, nwindow=5, price_pk_prominence=42, rsi_pk_prominence=2):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]  # positive peaks in price
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]  # positive peaks in rsi
+    counter = 0
+
+    for i in range(len(ref_price)):
+        if (price_set[-1]-ref_price[i]) <= 0 and (rsi_set[-1]-ref_rsi[i]) >= 0:
+            counter += 1
+
+        if counter == 2:
+            return "bull"
+
+
+def detect_bear_div(price_set, rsi_set, nwindow=5, price_pk_prominence=42, rsi_pk_prominence=2):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]  # positive peaks in price
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]  # positive peaks in rsi
+
+    counter = 0
+
+    for i in range(len(ref_price)):
+        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
+            counter += 1
+        if counter == 3:
+            return "bear"
+
+
+def detect_div(price_set, rsi_set, nwindow=5, price_pk_prominence=42, rsi_pk_prominence=2):
+>>>>>>> 6e9a7019984393365203764d2f3d1e99aec0c06a
     from scipy.signal import find_peaks
     # calculating peaks indices
     peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
@@ -93,24 +133,35 @@ def detect_div_v0(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_
     for ni, nitem in enumerate(npeaks_price):
         nref_price.append(price_set[nitem])
         nref_rsi.append(rsi_set[nitem])
-        for nj in range(ni-1, 0, -1):
-            # print(ni,nj,ni-nj)
-            if nj == ni-n_window+1:
-                break
-            if (nref_price[ni]-nref_price[nj]) <= 0 and (nref_rsi[ni]-nref_rsi[nj]) >= 0:
-                # bullish_div.append([npeaks_price[ni],npeaks_price[nj]])
-                return "bull"
 
-    for i, item in enumerate(peaks_price):
-        ref_price.append(price_set[item])
-        ref_rsi.append(rsi_set[item])
-        for j in range(i-1, 0, -1):
-            # print(i,j,i-j)
-            if j == i-n_window+1:
-                break
-            if (ref_price[i]-ref_price[j]) >= 0 and (ref_rsi[i]-ref_rsi[j]) <= 0:
-                # bearish_div.append([peaks_price[i],peaks_price[j]])
-                return "bear"
+    counter = 0
+    for nj in range(len(nref_price)):
+        if (price_set[-1]-nref_price[nj]) <= 0 and (rsi_set[-1]-nref_rsi[nj]) >= 0:
+            counter += 1
+        if counter == 2:
+            return "bull"
+
+    for ni, nitem in enumerate(peaks_price):
+        ref_price.append(price_set[nitem])
+        ref_rsi.append(rsi_set[nitem])
+
+    counter = 0
+    for nj in range(len(ref_price)):
+        if (price_set[-1]-ref_price[nj]) >= 0 and (rsi_set[-1]-ref_rsi[nj]) <= 0:
+            counter += 1
+        if counter == 2:
+            return "bear"
+
+    # for i, item in enumerate(peaks_price):
+    #     ref_price.append(price_set[item])
+    #     ref_rsi.append(rsi_set[item])
+    #     for j in range(i-1, 0, -1):
+    #         # print(i,j,i-j)
+    #         if j == i-n_window+1:
+    #             break
+    #         if (ref_price[i]-ref_price[j]) >= 0 and (ref_rsi[i]-ref_rsi[j]) <= 0:
+    #             # bearish_div.append([peaks_price[i],peaks_price[j]])
+    #             return "bear"
 
 def detect_div_v1(price_set, rsi_set, nwindow=5, price_pk_prominence=40, rsi_pk_prominence=2):
     from scipy.signal import find_peaks

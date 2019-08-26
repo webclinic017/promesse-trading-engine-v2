@@ -5,9 +5,9 @@ import queue
 
 import numpy as np
 
-from talib import RSI, EMA, BBANDS
+from talib import RSI, EMA, SMA, BBANDS
 
-from helpers import init_trailing_long, detect_div
+from helpers import init_trailing_long, init_trailing_short, detect_div, detect_bull_div, detect_bear_div
 
 
 class BBRSI(Strategy):
@@ -19,16 +19,18 @@ class BBRSI(Strategy):
 
         self.portfolio = portfolio
 
-        self.data_points = 100
+        self.data_points = 250
         self.counter = 0
 
         self.rsi_window = 14
-        self.ma_window = 20
+        self.ma_window = 21
 
         self.position = self._calculate_initial_position()
         self.trailing = self._calculate_initial_trailing()
 
         self.is_reversal = self._calculate_initial_reversal()
+
+        self.trend = None
 
     def _calculate_initial_position(self):
         position = dict((s, 'OUT') for s in self.symbol_list)
@@ -51,7 +53,8 @@ class BBRSI(Strategy):
                 break
 
             # Init signal infos
-            signal_datetime = self.data_handler.get_latest_bar(symbol).Index
+            signal_datetime = self.data_handler.get_latest_bar(
+                symbol).Index
             signal_type = ''
 
             # Init OHLCV bars and indicators
@@ -64,42 +67,77 @@ class BBRSI(Strategy):
 
             current_close = closes[-1]
 
-            hlc = (closes + highs + lows) / 3
-
             rsis = RSI(closes, timeperiod=self.rsi_window)
-            # rsis = rsis[~np.isnan(rsis)]
-
-            upper, middle, lower = BBANDS(
-                hlc, timeperiod=self.ma_window, nbdevup=2, nbdevdn=2)
+            ma_long = SMA(closes, timeperiod=90)[-1]
+            ma_short = SMA(closes, timeperiod=20)[-1]
 
             # Buy Signal conditions
             if self.position[symbol] == 'OUT':
-                trend = detect_div(closes, rsis)
+                if ma_short > ma_long:
+                    self.trend = detect_bull_div(lows, rsis)
 
-                if trend == 'bull' and current_close <= lower[-1]:
-                    print(f'{symbol} - LONG: {signal_datetime}')
-                    signal_type = 'LONG'
+                    if self.trend == 'bull':
+                        self.is_reversal[symbol] = 1
+                        break
 
-                    signal = SignalEvent(
-                        symbol=symbol,
-                        datetime=signal_datetime,
-                        signal_type=signal_type,
-                        strength=1
-                    )
-                    self.events.put(signal)
-                    self.position[symbol] = 'IN'
-                    self.trailing[symbol] = init_trailing_long(
-                        current_close,
-                        pct_sl=0.05,
-                        pct_tp=0.1
-                    )
+                    if self.is_reversal[symbol] == 1 and closes[-1] > closes[-2] and closes[-1] > closes[-2]:
+                        print(
+                            f'{symbol} - LONG: {signal_datetime}')
+                        signal_type = 'LONG'
+
+                        signal = SignalEvent(
+                            symbol=symbol,
+                            datetime=signal_datetime,
+                            signal_type=signal_type,
+                            strength=1
+                        )
+                        self.events.put(signal)
+                        self.position[symbol] = 'LONG'
+                        self.trailing[symbol] = init_trailing_long(
+                            current_close,
+                            pct_sl=0.09,
+                            pct_tp=0.11
+                        )
+                        self.is_reversal[symbol] = 0
+                        break
+
+                if ma_long > ma_short:
+                    self.trend = detect_bear_div(closes, rsis)
+
+                    if self.trend == 'bear':
+                        self.is_reversal[symbol] = 1
+                        break
+
+                    if self.is_reversal[symbol] == 1 and current_close < closes[-2]:
+                        print(
+                            f'{symbol} - SHORT: {signal_datetime}')
+                        signal_type = 'SHORT'
+
+                        signal = SignalEvent(
+                            symbol=symbol,
+                            datetime=signal_datetime,
+                            signal_type=signal_type,
+                            strength=1
+                        )
+                        self.events.put(signal)
+                        self.position[symbol] = 'SHORT'
+                        self.trailing[symbol] = init_trailing_short(
+                            current_close,
+                            pct_sl=0.05,
+                            pct_tp=0.06
+                        )
+                        self.is_reversal[symbol] = 0
+                        break
+
+                if (self.trend != 'bear' or self.trend != 'bull') and self.is_reversal[symbol] != 0:
+                    self.is_reversal[symbol] == 0
                     break
 
-            elif self.position[symbol] == 'IN':
-                trailing_ls = self.trailing[symbol](current_close)
+            if self.position[symbol] == 'LONG':
+                trailing_sl = self.trailing[symbol](current_close)
 
-                if current_close <= trailing_ls:
-                    print(f'{symbol} - STOP LOSS: {signal_datetime}')
+                if current_close <= trailing_sl:
+                    print(f'{symbol} - TP: {signal_datetime}')
                     signal_type = 'EXIT'
 
                     signal = SignalEvent(
@@ -109,3 +147,22 @@ class BBRSI(Strategy):
                     )
                     self.events.put(signal)
                     self.position[symbol] = 'OUT'
+                    self.is_reversal[symbol] = 0
+                    break
+
+            if self.position[symbol] == 'SHORT':
+                trailing_sl = self.trailing[symbol](current_close)
+
+                if current_close >= trailing_sl:
+                    print(f'{symbol} - TP: {signal_datetime}')
+                    signal_type = 'EXITSHORT'
+
+                    signal = SignalEvent(
+                        symbol=symbol,
+                        datetime=signal_datetime,
+                        signal_type=signal_type
+                    )
+                    self.events.put(signal)
+                    self.position[symbol] = 'OUT'
+                    self.is_reversal[symbol] = 0
+                    break

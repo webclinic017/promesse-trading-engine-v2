@@ -111,5 +111,5 @@ class FillEvent(Event):
         self.quantity = quantity
         self.direction = direction
         self.fill_cost = fill_cost
-        self.fees_rate = 0.00075
+        self.fees_rate = 0.0026
         self.fees = self.fees_rate * self.fill_cost * self.quantity
