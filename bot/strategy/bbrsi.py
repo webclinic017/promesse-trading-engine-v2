@@ -4,10 +4,11 @@ from event import SignalEvent
 import queue
 
 import numpy as np
+import pandas as pd
 
-from talib import RSI, EMA, SMA, BBANDS
+from talib import RSI, SMA, BBANDS
 
-from helpers import init_trailing_long, init_trailing_short, detect_div, detect_bull_div, detect_bear_div
+from helpers import init_trailing_long, init_trailing_short, detect_bull_div, detect_bear_div
 
 
 class BBRSI(Strategy):
@@ -31,6 +32,27 @@ class BBRSI(Strategy):
         self.is_reversal = self._calculate_initial_reversal()
 
         self.trend = None
+
+        self.prominence = {
+            "BTC-USDT": 1,
+            "LTC-BTC": 0.0001,
+            "NEO-BTC": 0.0001
+        }
+
+        self.risk_m = {
+            "BTC-USDT": {
+                'LONG': (0.1, 0.12),
+                'SHORT': (0.1, 0.13)
+            },
+            "LTC-BTC": {
+                'LONG': (0.09, 0.11),
+                'SHORT': (0.1, 0.11)
+            },
+            "NEO-BTC": {
+                'LONG': (0.1, 0.12),
+                'SHORT': (0.1, 0.12)
+            }
+        }
 
     def _calculate_initial_position(self):
         position = dict((s, 'OUT') for s in self.symbol_list)
@@ -74,13 +96,14 @@ class BBRSI(Strategy):
             # Buy Signal conditions
             if self.position[symbol] == 'OUT':
                 if ma_short > ma_long:
-                    self.trend = detect_bull_div(lows, rsis)
+                    self.trend = detect_bull_div(
+                        closes, rsis, self.prominence[symbol])
 
                     if self.trend == 'bull':
                         self.is_reversal[symbol] = 1
                         break
 
-                    if self.is_reversal[symbol] == 1 and closes[-1] > closes[-2] and closes[-1] > closes[-2]:
+                    if self.is_reversal[symbol] == 1 and current_close > closes[-2]:
                         print(
                             f'{symbol} - LONG: {signal_datetime}')
                         signal_type = 'LONG'
@@ -89,20 +112,21 @@ class BBRSI(Strategy):
                             symbol=symbol,
                             datetime=signal_datetime,
                             signal_type=signal_type,
-                            strength=1
+                            strength=2
                         )
                         self.events.put(signal)
                         self.position[symbol] = 'LONG'
                         self.trailing[symbol] = init_trailing_long(
                             current_close,
-                            pct_sl=0.09,
-                            pct_tp=0.11
+                            pct_sl=self.risk_m[symbol][signal_type][0],
+                            pct_tp=self.risk_m[symbol][signal_type][1]
                         )
                         self.is_reversal[symbol] = 0
                         break
 
-                if ma_long > ma_short:
-                    self.trend = detect_bear_div(closes, rsis)
+                if ma_short < ma_long:
+                    self.trend = detect_bear_div(
+                        closes, rsis, self.prominence[symbol])
 
                     if self.trend == 'bear':
                         self.is_reversal[symbol] = 1
@@ -117,14 +141,14 @@ class BBRSI(Strategy):
                             symbol=symbol,
                             datetime=signal_datetime,
                             signal_type=signal_type,
-                            strength=1
+                            strength=2
                         )
                         self.events.put(signal)
                         self.position[symbol] = 'SHORT'
                         self.trailing[symbol] = init_trailing_short(
                             current_close,
-                            pct_sl=0.05,
-                            pct_tp=0.06
+                            pct_sl=self.risk_m[symbol][signal_type][0],
+                            pct_tp=self.risk_m[symbol][signal_type][1]
                         )
                         self.is_reversal[symbol] = 0
                         break

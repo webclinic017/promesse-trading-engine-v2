@@ -38,7 +38,7 @@ class Portfolio:
         self.all_holdings = self._construct_all_holdings()
 
         # Money Management
-        self.pct_capital_risk = 1
+        self.pct_capital_risk = 0.1
 
         self.trades = None
 
@@ -378,7 +378,7 @@ class Portfolio:
         trades_avg_duration = floor(
             self.trades['duration'].mean().total_seconds() / 60)
         trades_avg_return = (self.trades['returns_long'].mean(
-        ) + self.trades['returns_short'].mean()) * 100
+        ) + self.trades['returns_short'].mean())/2 * 100
 
         trades_total_win = self.trades['win_trades_long'].sum(
         ) + self.trades['win_trades_short'].sum()
