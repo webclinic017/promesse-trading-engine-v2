@@ -65,7 +65,6 @@ def init_trailing_short(open_price, pct_sl, pct_tp):
         trailing = min(trailing, current_trailing)
 
         return trailing
-
     return update_sl
 
 
