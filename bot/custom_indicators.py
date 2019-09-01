@@ -2,6 +2,86 @@ import numpy as np
 import pandas as pd
 
 
+def BULL_DIV(price_set, rsi_set, price_pk_prominence, window=2):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]  # positive peaks in price
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]  # positive peaks in rsi
+    counter = 0
+
+    for i in range(len(ref_price)):
+        if (price_set[-1]-ref_price[i]) <= 0 and (rsi_set[-1]-ref_rsi[i]) >= 0:
+            counter += 1
+
+        if counter == window:
+            return "bull"
+
+    return None
+
+
+def BEAR_DIV(price_set, rsi_set, price_pk_prominence, window=2):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]  # positive peaks in price
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]  # positive peaks in rsi
+
+    counter = 0
+
+    for i in range(len(ref_price)):
+        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
+            counter += 1
+        if counter == window:
+            return "bear"
+
+    return None
+
+
+def HBULL_DIV(price_set, rsi_set, price_pk_prominence, window=2):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]  # positive peaks in price
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]  # positive peaks in rsi
+    counter = 0
+
+    for i in range(len(ref_price)):
+        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
+            counter += 1
+
+        if counter == window:
+            return "hbull"
+
+    return None
+
+
+def HBEAR_DIV(price_set, rsi_set, price_pk_prominence, window=2):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]  # positive peaks in price
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]  # positive peaks in rsi
+
+    counter = 0
+
+    for i in range(len(ref_price)):
+        if (price_set[-1]-ref_price[i]) <= 0 and (rsi_set[-1]-ref_rsi[i]) >= 0:
+            counter += 1
+        if counter == window:
+            return "hbear"
+
+    return None
+
+
 def PPSR(high, low, close):
     """
     It calculates Pivot Point Indicator

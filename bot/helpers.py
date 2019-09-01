@@ -68,46 +68,6 @@ def init_trailing_short(open_price, pct_sl, pct_tp):
     return update_sl
 
 
-def detect_bull_div(price_set, rsi_set, price_pk_prominence):
-    from scipy.signal import find_peaks
-
-    peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
-    ref_price = [price_set[item]
-                 for item in peaks_price]  # positive peaks in price
-    ref_rsi = [rsi_set[item]
-               for item in peaks_price]  # positive peaks in rsi
-    counter = 0
-
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) <= 0 and (rsi_set[-1]-ref_rsi[i]) >= 0:
-            counter += 1
-
-        if counter == 2:
-            return "bull"
-
-    return None
-
-
-def detect_bear_div(price_set, rsi_set, price_pk_prominence):
-    from scipy.signal import find_peaks
-
-    peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
-    ref_price = [price_set[item]
-                 for item in peaks_price]  # positive peaks in price
-    ref_rsi = [rsi_set[item]
-               for item in peaks_price]  # positive peaks in rsi
-
-    counter = 0
-
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
-            counter += 1
-        if counter == 2:
-            return "bear"
-
-    return None
-
-
 def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, latest_closes):
     """
     Returns previous daily HLC data
@@ -146,43 +106,3 @@ def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, l
     daily_close = latest_closes[start:end][-1]
 
     return daily_high, daily_low, daily_close
-
-
-def detect_h_bull_div(price_set, rsi_set, price_pk_prominence):
-    from scipy.signal import find_peaks
-
-    peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
-    ref_price = [price_set[item]
-                 for item in peaks_price]  # positive peaks in price
-    ref_rsi = [rsi_set[item]
-               for item in peaks_price]  # positive peaks in rsi
-    counter = 0
-
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
-            counter += 1
-
-        if counter == 2:
-            return "hbull"
-
-    return None
-
-
-def detect_h_bear_div(price_set, rsi_set, price_pk_prominence):
-    from scipy.signal import find_peaks
-
-    peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
-    ref_price = [price_set[item]
-                 for item in peaks_price]  # positive peaks in price
-    ref_rsi = [rsi_set[item]
-               for item in peaks_price]  # positive peaks in rsi
-
-    counter = 0
-
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) <= 0 and (rsi_set[-1]-ref_rsi[i]) >= 0:
-            counter += 1
-        if counter == 2:
-            return "hbear"
-
-    return None
