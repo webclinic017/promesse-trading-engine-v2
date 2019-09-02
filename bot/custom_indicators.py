@@ -27,19 +27,13 @@ def BEAR_DIV(price_set, rsi_set, price_pk_prominence, window=2):
 
     peaks_price, _ = find_peaks(price_set, prominence=price_pk_prominence)
     ref_price = [price_set[item]
-                 for item in peaks_price]  # positive peaks in price
+                 for item in peaks_price]
     ref_rsi = [rsi_set[item]
-               for item in peaks_price]  # positive peaks in rsi
+               for item in peaks_price]
 
-    counter = 0
-
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
-            counter += 1
-        if counter == window:
-            return "bear"
-
-    return None
+    for i in range(len(ref_price)-1, 0, -1):
+        if price_set[-1] > ref_price[i] and rsi_set[-1] < ref_rsi[i]:
+            return 'bear'
 
 
 def HBULL_DIV(price_set, rsi_set, price_pk_prominence, window=2):

@@ -6,7 +6,7 @@ import queue
 import numpy as np
 import pandas as pd
 
-from talib import RSI, EMA
+from talib import RSI, EMA, SMA
 from custom_indicators import BULL_DIV, BEAR_DIV, HBULL_DIV, HBEAR_DIV
 
 from helpers import init_trailing_long, init_trailing_short
@@ -21,7 +21,7 @@ class BBRSI(Strategy):
 
         self.portfolio = portfolio
 
-        self.data_points = 3360  # 1*24*7*20  (1h timeframe, 20 MA)
+        self.data_points = 6720  # 1*24*7*20  (1h timeframe, 20 MA)
         self.counter = 0
 
         self.rsi_window = 14
@@ -33,7 +33,9 @@ class BBRSI(Strategy):
 
         self.is_reversal = self._calculate_initial_reversal()
 
-        self.trend = None
+        self.trend = self._calculate_initial_trend()
+        self.trend_price = self._calculate_initial_trend_price()
+        self.div = self._calculate_initial_div()
 
         self.prominence = {
             'BTC-USDT': 42
@@ -41,8 +43,8 @@ class BBRSI(Strategy):
 
         self.risk_m = {
             'BTC-USDT': {
-                'LONG': (0.08, 0.1),
-                'SHORT': (0.08, 0.1)
+                'LONG': (0.09, 0.11),
+                'SHORT': (0.04, 0.02)
             }
         }
 
@@ -57,6 +59,18 @@ class BBRSI(Strategy):
     def _calculate_initial_trailing(self):
         trailing = dict((s, None) for s in self.symbol_list)
         return trailing
+
+    def _calculate_initial_trend(self):
+        trend = dict((s, None) for s in self.symbol_list)
+        return trend
+
+    def _calculate_initial_trend_price(self):
+        trend_price = dict((s, 0.0) for s in self.symbol_list)
+        return trend_price
+
+    def _calculate_initial_div(self):
+        div = dict((s, []) for s in self.symbol_list)
+        return div
 
     def calculate_signals(self):
         for symbol in self.symbol_list:
@@ -78,10 +92,6 @@ class BBRSI(Strategy):
                 symbol, 'close', N=self.data_points)
             closes = closes_w[-250:]
             current_close = closes[-1]
-            # highs = self.data_handler.get_latest_bars_values(
-            #     symbol, 'high', N=self.data_points)
-            # lows = self.data_handler.get_latest_bars_values(
-            #     symbol, 'low', N=self.data_points)
 
             # Buy Signal conditions
             if self.position[symbol] == 'OUT':
@@ -98,85 +108,57 @@ class BBRSI(Strategy):
                 closes_weekly = data_w.resample('W').agg({
                     'close': lambda x: x[-1]
                 })['close'].to_numpy()
-                close_weekly = closes_weekly[-1]
-                ma20_weekly = EMA(closes_weekly, timeperiod=20)[-1]
+                close_weekly = closes_weekly[-2]
+                ma20_weekly = EMA(closes_weekly, timeperiod=20)[-2]
 
                 # Long-term bullish trend
-                if close_weekly > ma20_weekly:
+                # if close_weekly > ma20_weekly:
+                #     print('↗↗ Long-term bullish')
+                #     # Short-term bearish trend -> bullish divergence
+                #     if ma_short < ma_long:
+                #         print('↘ Short-term bearish')
+                #         trend = BULL_DIV(
+                #             closes, rsis, self.prominence[symbol], window=2)
+                #         self.trend[symbol].append(trend)
 
-                    # Short-term bearish trend -> bullish divergence
-                    if ma_short < ma_long:
-                        self.trend = BULL_DIV(
-                            closes, rsis, self.prominence[symbol])
+                #         if self.trend[symbol][-1] == 'bull':
+                #             print(f'{self.trend} divergence')
+                #             self.is_reversal[symbol] = 1
+                #             self.trend_price[symbol] = current_close
+                #             break
 
-                        if self.trend == 'bull':
-                            self.is_reversal[symbol] = 1
-                            break
+                #         if self.is_reversal[symbol] == 1 and current_close > self.trend_price[symbol] and not self.trend[symbol][-1] and self.trend[symbol][-2] == 'bull' and self.trend[symbol][-3] == 'bull':
+                #             print(
+                #                 f'{symbol} {self.trend} - LONG: {signal_datetime}')
+                #             signal_type = 'LONG'
+                #             print(current_close, self.trend_price[symbol])
 
-                        if self.is_reversal[symbol] == 1 and current_close > closes[-2]:
-                            print(
-                                f'{symbol} {self.trend} - LONG: {signal_datetime}')
-                            signal_type = 'LONG'
+                #             signal = SignalEvent(
+                #                 symbol=symbol,
+                #                 datetime=signal_datetime,
+                #                 signal_type=signal_type,
+                #                 strength=1
+                #             )
+                #             self.events.put(signal)
+                #             self.position[symbol] = 'LONG'
+                #             self.trailing[symbol] = init_trailing_long(
+                #                 current_close,
+                #                 pct_sl=self.risk_m[symbol][signal_type][0],
+                #                 pct_tp=self.risk_m[symbol][signal_type][1]
+                #             )
+                #             self.trend[symbol] = []
+                #             self.is_reversal[symbol] = 0
+                #             self.trend_price[symbol] = 0
+                #             break
 
-                            signal = SignalEvent(
-                                symbol=symbol,
-                                datetime=signal_datetime,
-                                signal_type=signal_type,
-                                strength=1
-                            )
-                            self.events.put(signal)
-                            self.position[symbol] = 'LONG'
-                            self.trailing[symbol] = init_trailing_long(
-                                current_close,
-                                pct_sl=self.risk_m[symbol][signal_type][0],
-                                pct_tp=self.risk_m[symbol][signal_type][1]
-                            )
-                            self.is_reversal[symbol] = 0
-                            break
-
-                    # Short-term bullish trend -> hidden bullish
-                    elif ma_short > ma_long:
-                        self.trend = HBULL_DIV(
-                            closes, rsis, self.prominence[symbol])
-
-                        if self.trend == 'hbull':
-                            self.is_reversal[symbol] = 1
-                            break
-
-                        if self.is_reversal[symbol] == 1 and current_close > closes[-2]:
-                            print(
-                                f'{symbol} {self.trend} - LONG: {signal_datetime}')
-                            signal_type = 'LONG'
-
-                            signal = SignalEvent(
-                                symbol=symbol,
-                                datetime=signal_datetime,
-                                signal_type=signal_type,
-                                strength=1
-                            )
-                            self.events.put(signal)
-                            self.position[symbol] = 'LONG'
-                            self.trailing[symbol] = init_trailing_long(
-                                current_close,
-                                pct_sl=self.risk_m[symbol][signal_type][0],
-                                pct_tp=self.risk_m[symbol][signal_type][1]
-                            )
-                            self.is_reversal[symbol] = 0
-                            break
-
-                # Long-term bearish trend
-                elif close_weekly < ma20_weekly:
-
-                    # Short-term bullish trend -> bearish divergence
+                if close_weekly < ma20_weekly:
+                    print('↘↘ Long-term bearish')
                     if ma_short > ma_long:
-                        self.trend = BEAR_DIV(
-                            closes, rsis, self.prominence[symbol])
+                        print('↗ Short-term bullish')
+                        self.trend[symbol] = BEAR_DIV(
+                            closes, rsis, self.prominence[symbol], window=1)
 
-                        if self.trend == 'bear':
-                            self.is_reversal[symbol] = 1
-                            break
-
-                        if self.is_reversal[symbol] == 1 and current_close < closes[-2]:
+                        if self.trend[symbol] == 'bear':
                             print(
                                 f'{symbol} {self.trend} - SHORT: {signal_datetime}')
                             signal_type = 'SHORT'
@@ -194,100 +176,10 @@ class BBRSI(Strategy):
                                 pct_sl=self.risk_m[symbol][signal_type][0],
                                 pct_tp=self.risk_m[symbol][signal_type][1]
                             )
+                            self.trend[symbol] = None
                             self.is_reversal[symbol] = 0
+                            self.trend_price[symbol] = 0
                             break
-
-                    # Short-term bearish trend -> hidden bearish
-                    elif ma_short < ma_long:
-                        self.trend = HBEAR_DIV(
-                            closes, rsis, self.prominence[symbol])
-
-                        if self.trend == 'hbear':
-                            self.is_reversal[symbol] = 1
-                            break
-
-                        if self.is_reversal[symbol] == 1 and current_close < closes[-2]:
-                            print(
-                                f'{symbol} {self.trend} - SHORT: {signal_datetime}')
-                            signal_type = 'SHORT'
-
-                            signal = SignalEvent(
-                                symbol=symbol,
-                                datetime=signal_datetime,
-                                signal_type=signal_type,
-                                strength=1
-                            )
-                            self.events.put(signal)
-                            self.position[symbol] = 'SHORT'
-                            self.trailing[symbol] = init_trailing_short(
-                                current_close,
-                                pct_sl=self.risk_m[symbol][signal_type][0],
-                                pct_tp=self.risk_m[symbol][signal_type][1]
-                            )
-                            self.is_reversal[symbol] = 0
-                            break
-
-                # if ma_short > ma_long:
-                #     self.trend = detect_bull_div(
-                #         closes, rsis, self.prominence[symbol])
-
-                #     if self.trend == 'bull':
-                #         self.is_reversal[symbol] = 1
-                #         break
-
-                #     if self.is_reversal[symbol] == 1 and current_close > closes[-2]:
-                #         print(
-                #             f'{symbol} - LONG: {signal_datetime}')
-                #         signal_type = 'LONG'
-
-                #         signal = SignalEvent(
-                #             symbol=symbol,
-                #             datetime=signal_datetime,
-                #             signal_type=signal_type,
-                #             strength=2
-                #         )
-                #         self.events.put(signal)
-                #         self.position[symbol] = 'LONG'
-                #         self.trailing[symbol] = init_trailing_long(
-                #             current_close,
-                #             pct_sl=self.risk_m[symbol][signal_type][0],
-                #             pct_tp=self.risk_m[symbol][signal_type][1]
-                #         )
-                #         self.is_reversal[symbol] = 0
-                #         break
-
-                # if ma_short < ma_long:
-                #     self.trend = detect_bear_div(
-                #         closes, rsis, self.prominence[symbol])
-
-                #     if self.trend == 'bear':
-                #         self.is_reversal[symbol] = 1
-                #         break
-
-                #     if self.is_reversal[symbol] == 1 and current_close < closes[-2]:
-                #         print(
-                #             f'{symbol} - SHORT: {signal_datetime}')
-                #         signal_type = 'SHORT'
-
-                #         signal = SignalEvent(
-                #             symbol=symbol,
-                #             datetime=signal_datetime,
-                #             signal_type=signal_type,
-                #             strength=2
-                #         )
-                #         self.events.put(signal)
-                #         self.position[symbol] = 'SHORT'
-                #         self.trailing[symbol] = init_trailing_short(
-                #             current_close,
-                #             pct_sl=self.risk_m[symbol][signal_type][0],
-                #             pct_tp=self.risk_m[symbol][signal_type][1]
-                #         )
-                #         self.is_reversal[symbol] = 0
-                #         break
-
-                if not self.trend and self.is_reversal[symbol] != 0:
-                    self.is_reversal[symbol] == 0
-                    break
 
             # Sell Signal conditions
             elif self.position[symbol] == 'LONG':
@@ -321,5 +213,7 @@ class BBRSI(Strategy):
                     )
                     self.events.put(signal)
                     self.position[symbol] = 'OUT'
+                    self.trend[symbol] = None
                     self.is_reversal[symbol] = 0
+                    self.trend_price[symbol] = 0
                     break
