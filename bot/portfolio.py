@@ -38,11 +38,13 @@ class Portfolio:
         self.all_holdings = self._construct_all_holdings()
 
         # Money Management
-        self.pct_capital_risk = 0.1
+        self.pct_capital_risk = 0.5
 
         self.trades = None
 
         self.redis = redis.Redis()
+
+        self.indicators = dict()
 
     def __repr__(self):
         return f'<Portfolio: Initial capital {self.initial_capital}>'
@@ -191,6 +193,7 @@ class Portfolio:
         symbol = signal.symbol
         direction = signal.signal_type
         strength = signal.strength
+        self.indicators = signal.indicators
 
         order_type = 'MKT'
 
@@ -272,7 +275,8 @@ class Portfolio:
                 fill.fill_cost,
                 self.current_holdings[fill.symbol]['open_date'],
                 cost,
-                fill.fees
+                fill.fees,
+                self.indicators
             )
 
         elif fill.direction == 'SELL':

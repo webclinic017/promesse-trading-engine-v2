@@ -60,3 +60,10 @@ class DataHandler(metaclass=ABCMeta):
         Returns the current close price in Backtesting and current ask in live
         """
         raise NotImplementedError("Should implement current_price()")
+
+    @abstractmethod
+    def get_latest_bars_df(self):
+        """
+        Returns the current close price in Backtesting and current ask in live
+        """
+        raise NotImplementedError("Should implement get_latest_bars_df()")

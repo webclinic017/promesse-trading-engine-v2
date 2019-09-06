@@ -2,24 +2,70 @@ import numpy as np
 import pandas as pd
 
 
-def BULL_DIV(price_set, rsi_set, price_pk_prominence, window=2):
+def find_pos_price(price, price_set):
+    return len(price_set) - np.where(price_set == price)[0][0]
+
+
+def BULL_DIV_2(price_set, rsi_set, price_pk_prominence=40, window=1):
     from scipy.signal import find_peaks
 
     peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
     ref_price = [price_set[item]
-                 for item in peaks_price]  # positive peaks in price
+                 for item in peaks_price]
     ref_rsi = [rsi_set[item]
-               for item in peaks_price]  # positive peaks in rsi
-    counter = 0
+               for item in peaks_price]
 
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) <= 0 and (rsi_set[-1]-ref_rsi[i]) >= 0:
+    latest_price = price_set[-1]
+    latest_rsi = rsi_set[-1]
+
+    local_min = None
+
+    counter = 0
+    for i in range(len(ref_price)-1, 0, -1):
+        if latest_price < ref_price[i] and latest_rsi > ref_rsi[i]:
             counter += 1
+            latest_peak_price = ref_price[i]
+            latest_peak_rsi = ref_rsi[i]
+
+            latest_peak_pos = find_pos_price(latest_peak_price, price_set)
+            for j in range(latest_peak_pos-1, 1, -1):
+                if latest_price > price_set[-j]:
+                    local_min = price_set[-j]
+                    break
+
+            return {
+                'is_div': True,
+                'price_peaks': (price_set[-1], latest_peak_price),
+                'rsi_peaks': (rsi_set[-1], latest_peak_rsi),
+                'local_min': local_min,
+                'nb_div': counter
+            }
+    return False
+
+
+def BULL_DIV(price_set, rsi_set, price_pk_prominence, window=1):
+    from scipy.signal import find_peaks
+
+    peaks_price, _ = find_peaks(-price_set, prominence=price_pk_prominence)
+    ref_price = [price_set[item]
+                 for item in peaks_price]
+    ref_rsi = [rsi_set[item]
+               for item in peaks_price]
+
+    counter = 0
+    for i in range(len(ref_price)-1, 0, -1):
+        if price_set[-1] < ref_price[i] and rsi_set[-1] > ref_rsi[i]:
+            counter += 1
+            latest_peak_price = ref_price[i]
+            latest_peak_rsi = ref_rsi[i]
 
         if counter == window:
-            return "bull"
-
-    return None
+            return {
+                'is_div': True,
+                'price_peaks': (price_set[-1], latest_peak_price),
+                'rsi_peaks': (rsi_set[-1], latest_peak_rsi)
+            }
+    return False
 
 
 def BEAR_DIV(price_set, rsi_set, price_pk_prominence, window=2):
@@ -31,9 +77,16 @@ def BEAR_DIV(price_set, rsi_set, price_pk_prominence, window=2):
     ref_rsi = [rsi_set[item]
                for item in peaks_price]
 
+    counter = 0
+
     for i in range(len(ref_price)-1, 0, -1):
-        if price_set[-1] > ref_price[i] and rsi_set[-1] < ref_rsi[i]:
-            return 'bear'
+        if (ref_price[-1]-ref_price[i]) >= 0 and (ref_rsi[-1]-ref_rsi[i]) <= 0:
+            counter += 1
+
+        if counter == window:
+            return "bear", ref_price[-1], ref_rsi[-1]
+
+    return None, 0, 0
 
 
 def HBULL_DIV(price_set, rsi_set, price_pk_prominence, window=2):
@@ -46,14 +99,14 @@ def HBULL_DIV(price_set, rsi_set, price_pk_prominence, window=2):
                for item in peaks_price]  # positive peaks in rsi
     counter = 0
 
-    for i in range(len(ref_price)):
-        if (price_set[-1]-ref_price[i]) >= 0 and (rsi_set[-1]-ref_rsi[i]) <= 0:
+    for i in range(len(ref_price)-1, 0, -1):
+        if (ref_price[-1]-ref_price[i]) >= 0 and (ref_rsi[-1]-ref_rsi[i]) <= 0:
             counter += 1
 
         if counter == window:
-            return "hbull"
+            return "hbull", ref_price[-1]
 
-    return None
+    return None, 0
 
 
 def HBEAR_DIV(price_set, rsi_set, price_pk_prominence, window=2):

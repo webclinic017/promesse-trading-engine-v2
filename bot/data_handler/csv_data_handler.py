@@ -150,3 +150,15 @@ class CSVDataHandler(DataHandler):
         It retuns latest close price
         """
         return self.get_latest_bar_value(symbol, 'close')
+
+    def get_latest_bars_df(self, symbol, N=1):
+        """
+        It returns the latest bars data of a given symbol as a np array
+        """
+        try:
+            bars = pd.DataFrame(self.latest_symbol_data[symbol][-N:])
+            bars.set_index('Index', inplace=True)
+            return bars
+        except KeyError:
+            print("That symbol is not available in the historical data set.")
+            raise

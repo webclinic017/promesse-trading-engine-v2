@@ -2,7 +2,7 @@ class Trade:
 
     trades = list()
 
-    def __init__(self, symbol, direction, open_market_price, open_date, open_price, open_fees):
+    def __init__(self, symbol, direction, open_market_price, open_date, open_price, open_fees, indicators):
         self.symbol = symbol
         self.open_market_price = open_market_price
         self.is_open = True
@@ -16,6 +16,8 @@ class Trade:
         self.close_date = None
         self.close_fees = None
         self.direction = direction
+
+        self.indicators = indicators
 
         self.trades.append(self)
 
@@ -43,7 +45,8 @@ class Trade:
                     'open_price': trade.open_price,
                     'open_date': trade.open_date,
                     'close_price': trade.close_price,
-                    'close_date': trade.close_date
+                    'close_date': trade.close_date,
+                    'indicator': trade.indicators
                 }
             )
         return trades
