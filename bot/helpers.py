@@ -75,6 +75,10 @@ def init_trailing(open_price, pct_sl, pct_tp, direction):
         return init_trailing_short(open_price, pct_sl, pct_tp)
 
 
+def stop_loss(open_price, pct_sl):
+    return open_price*(1-pct_sl)
+
+
 def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, latest_closes):
     """
     Returns previous daily HLC data
