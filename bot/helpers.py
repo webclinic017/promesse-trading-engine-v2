@@ -117,3 +117,25 @@ def get_prev_daily_hlc(timeframe, latest_datetimes, latest_highs, latest_lows, l
     daily_close = latest_closes[start:end][-1]
 
     return daily_high, daily_low, daily_close
+
+
+def open_ticker_csv(ticker_name: str, timeframe: str, directory: str) -> pd.DataFrame:
+    ticker_name = '-'.join(ticker_name.split('/'))
+    ticker_name = f'{ticker_name}_{timeframe}' if timeframe else f'{ticker_name}'
+    ticker_path = f'{directory}/{ticker_name}.csv'
+    columns_names = ('timestamp', 'open', 'high', 'low', 'close', 'volume')
+
+    ticker = pd.read_csv(ticker_path,
+                         index_col=0,
+                         header=None,
+                         names=columns_names)
+
+    return ticker
+
+
+def clean_ticker(ticker: pd.DataFrame) -> pd.DataFrame:
+    ticker_copy = ticker.copy()
+    ticker_copy.index = pd.to_datetime(ticker_copy.index, unit='ms')
+    ticker_copy = ticker_copy.drop_duplicates().sort_index()
+
+    return ticker_copy

@@ -40,15 +40,13 @@ class Portfolio:
         self.all_holdings = self._construct_all_holdings()
 
         # Money Management
-        self.pct_capital_risk = 1
-
-        # Risk Management
-        self.pct_stop_loss = 0.02
-        self.pct_take_profit = 0.05
+        self.pct_capital_risk = 0.5
 
         self.trades = None
 
         self.redis = redis.Redis()
+
+        self.indicators = dict()
 
     def __repr__(self):
         return f'<Portfolio: Initial capital {self.initial_capital}>'
@@ -262,10 +260,12 @@ class Portfolio:
 
             Trade(
                 fill.symbol,
+                'SHORT',
                 fill.fill_cost,
                 self.current_holdings[fill.symbol]['open_date'],
                 cost,
-                fill.fees
+                fill.fees,
+                self.indicators
             )
 
         elif fill.direction == 'SHORTCOVER':

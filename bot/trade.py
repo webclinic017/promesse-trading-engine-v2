@@ -46,7 +46,9 @@ class Trade:
                     'open_date': trade.open_date,
                     'close_price': trade.close_price,
                     'close_date': trade.close_date,
-                    'indicator': trade.indicators
+                    'indicator': trade.indicators,
+                    'open_fees': trade.open_fees,
+                    'close_fees': trade.close_fees
                 }
             )
         return trades

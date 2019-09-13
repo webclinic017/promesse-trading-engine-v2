@@ -1,5 +1,5 @@
 from portfolio import Portfolio
-from strategy.bbrsi import BBRSI
+from strategy.bbrsi_final_2 import BBRSI
 from execution_handler import SimulatedExecutionHandler
 from engine import Engine
 

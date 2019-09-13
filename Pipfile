@@ -21,6 +21,7 @@ asyncio = "*"
 redis = "*"
 tabulate = "*"
 scipy = "*"
+pendulum = "*"
 
 [requires]
 python_version = "3.7"

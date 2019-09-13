@@ -162,3 +162,16 @@ class CSVDataHandler(DataHandler):
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
+
+    def get_latest_bars_values_df(self, symbol, value_type, N=1):
+        """
+        It returns the latest bars data of a given symbol as a np array
+        """
+        try:
+            bars = pd.DataFrame(self.latest_symbol_data[symbol][-N:])
+            bars.set_index('Index', inplace=True)
+            bars = bars[value_type]
+            return bars
+        except KeyError:
+            print("That symbol is not available in the historical data set.")
+            raise
