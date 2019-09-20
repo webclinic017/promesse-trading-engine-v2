@@ -26,7 +26,7 @@ class BBRSI(Strategy):
 
         self.bars_window = 200
         self.rsi_window = 14
-        self.div_window = 50
+        self.div_window = 100
 
         self.ma_short = 10
         self.ma_long = 50
