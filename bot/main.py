@@ -1,5 +1,5 @@
 from portfolio import Portfolio
-from strategy.bbrsi_final_2 import BBRSI
+from strategy.bbrsi_telegram import BBRSI
 from execution_handler import SimulatedExecutionHandler
 from engine import Engine
 
@@ -11,7 +11,7 @@ config = load_config()
 if config['run_mode'] == 'backtest':
     from data_handler.csv_data_handler import CSVDataHandler as DataHandler
     heartbeat = 0
-    start_date = datetime(2017, 1, 1)
+    start_date = datetime(2013, 1, 1)
 
 else:
     from data_handler.live_data_handler import LiveDataHandler as DataHandler

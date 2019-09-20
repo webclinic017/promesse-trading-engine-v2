@@ -21,9 +21,12 @@ class CSVDataHandler(DataHandler):
         self.symbol_data = dict()
         self.latest_symbol_data = dict()
 
+        self.symbol_data_weekly = dict()
+
         self.continue_backtest = True
 
         self._load_symbol_data()
+       # self._load_weekly_bars()
 
     def __repr__(self):
         return f'<CSVDataHandler>'
@@ -57,7 +60,6 @@ class CSVDataHandler(DataHandler):
                 combined_symbol_index = combined_symbol_index.union(
                     self.symbol_data[symbol].index)
 
-            # Init list that will contain latest ohlcv data for each symbol
             self.latest_symbol_data[symbol] = list()
 
         for symbol in self.symbol_list:
@@ -175,3 +177,17 @@ class CSVDataHandler(DataHandler):
         except KeyError:
             print("That symbol is not available in the historical data set.")
             raise
+
+    # def _load_weekly_bars(self):
+    #     symbol_data = dict()
+    #     csv_files_path = f'{Path().absolute()}/{self.csv_dir}'
+    #     for symbol in self.symbol_list:
+    #         symbol_csv_path = f'{csv_files_path}/{symbol}_1w.csv'
+    #         data_w = pd.read_csv(symbol_csv_path)
+    #         data_w['datetime'] = pd.to_datetime(data_w['datetime'])
+    #         data_w.set_index('datetime', inplace=True)
+    #         data_w = data_w.shift()
+    #         self.symbol_data_weekly[symbol] = data_w
+
+    # def get_weekly_bar_value(self, symbol, day_of_week, value_type):
+    #     return self.symbol_data_weekly[symbol].get_value(day_of_week, value_type)

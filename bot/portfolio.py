@@ -10,7 +10,7 @@ from trade import Trade
 from helpers import load_config
 
 from pathlib import Path
-import redis
+#import redis
 
 
 class Portfolio:
@@ -42,7 +42,7 @@ class Portfolio:
 
         self.trades = None
 
-        self.redis = redis.Redis()
+        #self.redis = redis.Redis()
 
         self.indicators = dict()
 
@@ -144,22 +144,22 @@ class Portfolio:
 
         self.all_holdings.append(holdings)
 
-        if self.config['run_mode'] != 'backtest':
-            with self.redis.pipeline() as pipe:
-                pipe.mset({
-                    "cash": holdings['cash'],
-                    "total": holdings['total']
-                })
+        # if self.config['run_mode'] != 'backtest':
+        #     with self.redis.pipeline() as pipe:
+        #         pipe.mset({
+        #             "cash": holdings['cash'],
+        #             "total": holdings['total']
+        #         })
 
-                for symbol in self.symbol_list:
-                    is_open = holdings[symbol]['is_open']
-                    pipe.hmset(f'symbol:{symbol}', {
-                        'is_open': int(holdings[symbol]['is_open']),
-                        'open_price': holdings[symbol]['open_price'],
-                        'open_date': holdings[symbol]['open_date'].isoformat() if is_open else '0',
-                        'current_value': holdings[symbol]['current_value']
-                    })
-                pipe.execute()
+        #         for symbol in self.symbol_list:
+        #             is_open = holdings[symbol]['is_open']
+        #             pipe.hmset(f'symbol:{symbol}', {
+        #                 'is_open': int(holdings[symbol]['is_open']),
+        #                 'open_price': holdings[symbol]['open_price'],
+        #                 'open_date': holdings[symbol]['open_date'].isoformat() if is_open else '0',
+        #                 'current_value': holdings[symbol]['current_value']
+        #             })
+        #         pipe.execute()
 
     def update_all_positions_holdings(self):
         """

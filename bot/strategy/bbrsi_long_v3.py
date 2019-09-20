@@ -6,12 +6,18 @@ import queue
 import numpy as np
 import pandas as pd
 
-from talib import RSI, EMA, BBANDS, MA_Type
-from custom_indicators import BULL_DIV_2, BULL_DIV_RSI_2, BEAR_DIV_2, bull_div
+from talib import RSI, EMA, BBANDS
+from custom_indicators import bull_div, bear_div
 
-from helpers import stop_loss, init_trailing_long
+from helpers import stop_loss, init_trailing_long, get_day_of_week
 
 from math import floor
+
+from colored import fg, bg, attr
+red = fg('red')
+green = fg('green')
+bold = attr(1)
+reset = attr('reset')
 
 
 class BBRSI(Strategy):
@@ -23,33 +29,35 @@ class BBRSI(Strategy):
 
         self.portfolio = portfolio
 
-        self.data_points = 4*24*7*20
         self.counter = 0
 
         self.bars_window = 250
-        self.div_window = 50
+        self.div_window = 200
         self.rsi_window = 14
 
-        self.ma_trend = 20
+        self.ma_short = 20
+        self.ma_long = 90
 
-        self.ma_short = 10
-        self.ma_long = 50
-
-        self.timeframe_trend = 'W'
+        self.ma_trend = 5
+        self.data_points = 4*24*7*self.ma_trend
+        self.trend_counter = 0
 
         self.bb_std = 2
         self.bb_window = 20
 
-        self.sell_signal = 0
+        self.open_price = None
         self.trailing = None
 
-        self.sl_signal = 0
+        self.stop_loss = 0
 
-        self.open_price = None
+        self.sell_signal = 0
+        self.trend_counter = 0
 
         self.position = self._calculate_initial_position()
 
-        self.is_reversal = 0
+        self.is_div = None
+        self.div_signal = 0
+        self.buy_signal = 0
 
     def _calculate_initial_position(self):
         position = dict((s, 'OUT') for s in self.symbol_list)
@@ -94,78 +102,88 @@ class BBRSI(Strategy):
                 symbol, 'low')
             current_close = self.data_handler.current_price(symbol)
 
-            rsi = RSI(hlc3, timeperiod=self.rsi_window)
-            rsi_set = rsi[-self.div_window:]
+            rsi = RSI(closes, timeperiod=self.rsi_window)
 
             ma_long = EMA(closes, timeperiod=self.ma_long)[-1]
             ma_short = EMA(closes, timeperiod=self.ma_short)[-1]
+            prominence = ma_long*0.001
 
             # Buy Signal conditions
             if self.position[symbol] == 'OUT':
+                dt = get_day_of_week(signal_datetime)
+                close_lg = self.data_handler.get_weekly_bar_value(
+                    symbol, dt, 'close')
+                ma_lg = self.data_handler.get_weekly_bar_value(
+                    symbol, dt, f'ema{self.ma_trend}')
 
-                bars_lg = self.data_handler.get_latest_bars_df(
-                    symbol, N=self.data_points)
-
-                bars_lg = bars_lg[['open', 'close']]
-
-                bars_lg = bars_lg.resample(self.timeframe_trend).agg({
-                    'open': lambda x: x[0],
-                    'close': lambda x: x[-1]
-                })
-
-                bars_lg.index += pd.DateOffset(days=-6)
-
-                ma_lg = EMA(bars_lg['close'], timeperiod=self.ma_trend)
-
-                is_bullish_trend = bars_lg['close'][-2] > ma_lg[-2]
-
-                price_set_low = lows[-self.div_window:]
+                is_bullish_trend = close_lg > ma_lg
 
                 if is_bullish_trend:
                     print('Long-term BULLISH')
                     if ma_short < ma_long:
                         print('Short-term bearish')
-                        is_div = bull_div(
-                            price_set_low, rsi_set, 1, 1)
+                        self.trend_counter += 1
 
-                        if is_div:
-                            signal_type = 'LONG'
-                            print(f'{symbol} - {signal_type}: {signal_datetime}')
+                    if self.trend_counter >= 20 and not self.is_div:
+                        print('Short-term bearish')
+                        self.is_div = bull_div(
+                            lows,
+                            rsi,
+                            window=self.div_window,
+                            price_prominence=prominence,
+                            rsi_prominence=1)
 
-                            signal = SignalEvent(
-                                symbol=symbol,
-                                datetime=signal_datetime,
-                                signal_type=signal_type,
-                                strength=1,
-                                indicators=None
-                            )
-                            self.events.put(signal)
-                            self.position[symbol] = signal_type
-                            self.open_price = current_close
-                            break
+                        if self.is_div:
+                            print('Div detected')
+                            self.div_signal += 1
 
-            # Sell Signal conditions
+                    if self.div_signal and rsi[-1] >= 30 and current_close > current_open:
+                        signal_type = 'LONG'
+                        print(
+                            f'{symbol} - {signal_type}: {signal_datetime}')
+
+                        signal = SignalEvent(
+                            symbol=symbol,
+                            datetime=signal_datetime,
+                            signal_type=signal_type,
+                            strength=1,
+                            indicators=None
+                        )
+                        self.events.put(signal)
+                        self.position[symbol] = signal_type
+                        self.open_price = current_close
+                        self.trend_counter = 0
+                        self.is_div = None
+                        self.div_signal = 0
+                        break
+
+                    if self.div_signal >= 4:
+                        self.trend_counter = 0
+                        self.is_div = None
+                        self.div_signal = 0
+                        break
+
             elif self.position[symbol] == 'LONG':
-                returns = ((current_close / self.open_price) - 1) * 100
+                returns = ((current_close / self.open_price) - 1)
+
                 upper, middle, lower = BBANDS(
                     hlc3,
                     timeperiod=self.bb_window,
                     nbdevup=self.bb_std,
                     nbdevdn=self.bb_std)
 
-                if current_close >= upper[-1]:
-                    self.sell_signal += 1
-
-                if self.sell_signal == 3:
-                    if current_close > self.open_price:
-                        print(f'{symbol} - WIN: {signal_datetime}')
-                        print('Sell Signal: ', self.sell_signal)
-                        print('Returns %: ', returns)
+                if returns >= 0.05 or returns <= -0.02:
+                    if returns > 0:
+                        print(bold + green +
+                              f'{symbol} - WIN: {signal_datetime}' + reset)
+                        print('Returns %: ', returns*100)
+                        print('Trend counter: ', self.trend_counter)
 
                     else:
-                        print(f'{symbol} - LOSS: {signal_datetime}')
-                        print('Sell Signal: ', self.sell_signal)
-                        print('Returns %: ', returns)
+                        print(bold + red +
+                              f'{symbol} - LOSS: {signal_datetime}' + reset)
+                        print('Returns %: ', returns*100)
+                        print('Trend counter: ', self.trend_counter)
 
                     signal_type = 'EXIT'
 
@@ -176,6 +194,5 @@ class BBRSI(Strategy):
                     )
                     self.events.put(signal)
                     self.position[symbol] = 'OUT'
-                    self.sl_signal = 0
                     self.sell_signal = 0
                     break

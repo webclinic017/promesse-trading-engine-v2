@@ -29,8 +29,8 @@ class BBRSI(Strategy):
         self.div_window = 30
         self.rsi_window = 14
 
-        self.ma_short = 30
-        self.ma_long = 100
+        self.ma_short = 20
+        self.ma_long = 90
 
         self.bb_std = 2
         self.bb_window = 20
@@ -95,10 +95,8 @@ class BBRSI(Strategy):
 
                 if current_high < ma_short and ma_short < ma_long:
                     print('Short-term bearish')
-                    prominence = abs(current_low - lows[-2])
-                    prominence_rsi = abs(rsi[-1] - rsi[-2])
                     is_div = bull_div(
-                        price_set_low, rsi_set, 10, 1)
+                        price_set_low, rsi_set, ma_short*0.001, 1)
 
                     if is_div:
                         signal_type = 'LONG'

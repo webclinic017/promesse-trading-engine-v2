@@ -54,7 +54,7 @@ class LiveDataHandler(DataHandler):
 
         for symbol in self.symbol_list:
             self.latest_symbol_data[symbol] = self.exchange.fetch_ohlcv(
-                symbol, timeframe=self.timeframe, limit=100)
+                symbol, timeframe=self.timeframe, limit=200)
             # Wait a sec before sending a request
             time.sleep(1)
 
@@ -146,3 +146,28 @@ class LiveDataHandler(DataHandler):
                 counter -= 1
             else:
                 return 0
+
+    def get_latest_bars_df(self, symbol, N=1):
+        """
+        It returns the latest bars data of a given symbol as a np array
+        """
+        try:
+            bars = pd.DataFrame(self.latest_symbol_data[symbol][-N:])
+            bars.set_index('Index', inplace=True)
+            return bars
+        except KeyError:
+            print("That symbol is not available in the historical data set.")
+            raise
+
+    def get_latest_bars_values_df(self, symbol, value_type, N=1):
+        """
+        It returns the latest bars data of a given symbol as a np array
+        """
+        try:
+            bars = pd.DataFrame(self.latest_symbol_data[symbol][-N:])
+            bars.set_index('Index', inplace=True)
+            bars = bars[value_type]
+            return bars
+        except KeyError:
+            print("That symbol is not available in the historical data set.")
+            raise

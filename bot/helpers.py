@@ -36,11 +36,13 @@ def init_trailing_long(open_price, pct_sl, pct_tp):
 
     def update_sl(current_price):
         nonlocal trailing
+        nonlocal pct_sl
 
         returns = (current_price / open_price) - 1
         current_trailing = 0.0
 
         if returns >= pct_tp:
+            pct_sl = pct_sl / 1
             current_trailing = current_price*(1-pct_sl)
 
         trailing = max(trailing, current_trailing)
@@ -139,3 +141,12 @@ def clean_ticker(ticker: pd.DataFrame) -> pd.DataFrame:
     ticker_copy = ticker_copy.drop_duplicates().sort_index()
 
     return ticker_copy
+
+
+def get_day_of_week(dt):
+    import pendulum
+    dt = pendulum.parse(dt.isoformat())
+    dt_w = dt.start_of('week')
+    date_w_str = f'{dt_w.year}-{dt_w.month}-{dt_w.day}'
+
+    return date_w_str

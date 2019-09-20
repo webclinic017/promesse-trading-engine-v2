@@ -2,62 +2,205 @@ import numpy as np
 import pandas as pd
 
 
-def find_pos_price(price, price_set):
-    return len(price_set) - np.where(price_set == price)[0][0]
-
-
-def bull_div(price, rsi, price_prominence=1, rsi_prominence=1):
+def bull_div(price, rsi, timestamps, window=20, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    current_price = price[-1]
-    latest_price = price[-2]
-    current_rsi = rsi[-1]
-    latest_rsi = rsi[-2]
+    price = price[-window:]
+    rsi = rsi[-window:]
+    timestamps = timestamps[-window:]
 
-    if current_rsi < latest_rsi:
+    latest_price = price[-2]
+    latest_rsi = rsi[-2]
+    latest_timestamp = timestamps[-2]
+
+    if latest_rsi > rsi[-1] or latest_rsi > rsi[-3]:
         return False
 
     price_peaks, _ = find_peaks(-price, prominence=price_prominence)
     rsi_peaks, _ = find_peaks(-rsi, prominence=rsi_prominence)
     peaks_index = sorted(set(price_peaks).intersection(set(rsi_peaks)))
+
+    rsi_peaks_unique = set(rsi_peaks) - set(peaks_index)
+    price_peaks_unique = set(price_peaks) - set(peaks_index)
+
+    for rsi_peak in rsi_peaks_unique:
+        for price_peak in price_peaks_unique:
+            if abs(rsi_peak - price_peak) == 1:
+                peaks_index.append(rsi_peak)
+
     full_peaks_set = tuple(
-        (index, price[index], rsi[index]) for index in peaks_index)
+        (index, timestamps[index], price[index], rsi[index]) for index in peaks_index)
 
-    detected_divs = []
+    detected_divs = [(latest_timestamp, latest_price, latest_rsi)]
 
-    for index, price_peak, rsi_peak in full_peaks_set:
+    for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price < price_peak and latest_rsi > rsi_peak:
             if rsi_peak == min(rsi[index:-1]):
-                detected_divs.append((index, price_peak, rsi_peak))
+                detected_divs.append(
+                    (timestamp_peak, price_peak, rsi_peak))
 
-    return len(detected_divs)
+    return detected_divs
 
 
-def bear_div(price, rsi, price_prominence=1, rsi_prominence=1):
+def bear_div(price, rsi, timestamps, window=20, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    current_price = price[-1]
-    latest_price = price[-2]
-    current_rsi = rsi[-1]
-    latest_rsi = rsi[-2]
+    price = price[-window:]
+    rsi = rsi[-window:]
+    timestamps = timestamps[-window:]
 
-    if current_rsi > latest_rsi:
+    latest_price = price[-2]
+    latest_rsi = rsi[-2]
+    latest_timestamp = timestamps[-2]
+
+    if latest_rsi < rsi[-1] or latest_rsi < rsi[-3]:
         return False
 
     price_peaks, _ = find_peaks(price, prominence=price_prominence)
     rsi_peaks, _ = find_peaks(rsi, prominence=rsi_prominence)
     peaks_index = sorted(set(price_peaks).intersection(set(rsi_peaks)))
+
+    rsi_peaks_unique = set(rsi_peaks) - set(peaks_index)
+    price_peaks_unique = set(price_peaks) - set(peaks_index)
+
+    for rsi_peak in rsi_peaks_unique:
+        for price_peak in price_peaks_unique:
+            if abs(rsi_peak - price_peak) == 1:
+                peaks_index.append(rsi_peak)
+
     full_peaks_set = tuple(
-        (index, price[index], rsi[index]) for index in peaks_index)
+        (index, timestamps[index], price[index], rsi[index]) for index in peaks_index)
 
-    detected_divs = []
+    detected_divs = [(latest_timestamp, latest_price, latest_rsi)]
 
-    for index, price_peak, rsi_peak in full_peaks_set:
-        if latest_price >= price_peak and latest_rsi < rsi_peak:
+    for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
+        if latest_price > price_peak and latest_rsi < rsi_peak:
             if rsi_peak == max(rsi[index:-1]):
-                detected_divs.append((index, price_peak, rsi_peak))
+                detected_divs.append(
+                    (timestamp_peak, price_peak, rsi_peak))
 
-    return len(detected_divs)
+    return detected_divs
+
+
+# def find_pos_price(price, price_set):
+#     return len(price_set) - np.where(price_set == price)[0][0]
+
+
+# def bull_div(price, rsi, window=500, min_distance=50, price_prominence=1, rsi_prominence=1):
+#     from scipy.signal import find_peaks
+
+#     price = price[-window:]
+#     rsi = rsi[-window:]
+
+#     current_price = price[-1]
+#     latest_price = price[-2]
+#     current_rsi = rsi[-1]
+#     latest_rsi = rsi[-2]
+
+#     if latest_rsi > current_rsi or latest_rsi > rsi[-3]:
+#         return False
+
+#     price_peaks, _ = find_peaks(-price, prominence=price_prominence)
+#     rsi_peaks, _ = find_peaks(-rsi, prominence=rsi_prominence)
+#     peaks_index = sorted(set(price_peaks).intersection(set(rsi_peaks)))
+
+#     rsi_peaks_unique = set(rsi_peaks) - set(peaks_index)
+#     price_peaks_unique = set(price_peaks) - set(peaks_index)
+
+#     for rsi_peak in rsi_peaks_unique:
+#         for price_peak in price_peaks_unique:
+#             if abs(rsi_peak - price_peak) == 1:
+#                 peaks_index.append(rsi_peak)
+
+#     full_peaks_set = tuple(
+#         (index, price[index], rsi[index]) for index in peaks_index)
+#     detected_divs = []
+
+#     for index, price_peak, rsi_peak in full_peaks_set:
+#         if rsi_peak <= 25 and latest_rsi <= 30:
+#             if latest_price < price_peak and latest_rsi > rsi_peak:
+#                 if rsi_peak == min(rsi[index:-1]) and latest_price == min(price[index:-1]):
+#                     if (rsi[index:-1] >= 30).sum() >= min_distance:
+#                         detected_divs.append(
+#                             (index, price_peak, rsi_peak))
+
+#     return len(detected_divs)
+
+
+# def bull_div(price, rsi, window=20, price_prominence=1, rsi_prominence=1):
+#     from scipy.signal import find_peaks
+
+#     price = price[-window:]
+#     rsi = rsi[-window:]
+
+#     current_price = price[-1]
+#     latest_price = price[-2]
+#     current_rsi = rsi[-1]
+#     latest_rsi = rsi[-2]
+
+#     if latest_rsi > current_rsi or latest_rsi > rsi[-3]:
+#         return False
+
+#     price_peaks, _ = find_peaks(-price, prominence=price_prominence)
+#     rsi_peaks, _ = find_peaks(-rsi, prominence=rsi_prominence)
+#     peaks_index = sorted(set(price_peaks).intersection(set(rsi_peaks)))
+
+#     # rsi_peaks_unique = set(rsi_peaks) - set(peaks_index)
+#     # price_peaks_unique = set(price_peaks) - set(peaks_index)
+
+#     # for rsi_peak in rsi_peaks_unique:
+#     #     for price_peak in price_peaks_unique:
+#     #         if abs(rsi_peak - price_peak) == 1:
+#     #             peaks_index.append(rsi_peak)
+
+#     full_peaks_set = tuple(
+#         (index, price[index], rsi[index]) for index in peaks_index)
+#     detected_divs = []
+
+#     for index, price_peak, rsi_peak in full_peaks_set:
+#         if latest_price < price_peak and latest_rsi > rsi_peak:
+#             if rsi_peak == min(rsi) and latest_price == min(price[index:-1]):
+#                 detected_divs.append((index, price_peak, rsi_peak))
+
+#     return len(detected_divs)
+
+
+# def bull_div(price, rsi, opens, closes, price_prominence=1, rsi_prominence=1):
+#     from scipy.signal import find_peaks
+
+#     current_price = price[-1]
+#     latest_price = price[-2]
+#     current_rsi = rsi[-1]
+#     latest_rsi = rsi[-2]
+
+#     if latest_rsi > current_rsi or latest_rsi > rsi[-3]:
+#         return False
+
+#     if opens[-1] > closes[-1]:
+#         return False
+
+#     price_peaks, _ = find_peaks(-price, prominence=price_prominence)
+#     rsi_peaks, _ = find_peaks(-rsi, prominence=rsi_prominence)
+#     peaks_index = sorted(set(price_peaks).intersection(set(rsi_peaks)))
+
+#     # rsi_peaks_unique = set(rsi_peaks) - set(peaks_index)
+#     # price_peaks_unique = set(price_peaks) - set(peaks_index)
+
+#     # for rsi_peak in rsi_peaks_unique:
+#     #     for price_peak in price_peaks_unique:
+#     #         if abs(rsi_peak - price_peak) == 1:
+#     #             peaks_index.append(rsi_peak)
+
+#     full_peaks_set = tuple(
+#         (index, price[index], rsi[index]) for index in peaks_index)
+#     detected_divs = []
+
+#     for index, price_peak, rsi_peak in full_peaks_set:
+#         if latest_price < price_peak and latest_rsi > rsi_peak:
+#             if rsi_peak == min(rsi[index:-1]) and latest_price == min(price[index:-1]):
+#                 detected_divs.append((index, price_peak, rsi_peak))
+
+#     return len(detected_divs)
 
 
 def BULL_DIV_2(price_set, rsi_set, bars_open, bars_close, price_pk_prominence=10):
@@ -143,7 +286,7 @@ def BULL_DIV_RSI_2(price_set, rsi_set, bars_open, bars_close, price_pk_prominenc
         if latest_price < ref_price[i] and latest_rsi > ref_rsi[i]:
             latest_peak_price = ref_price[i]
             latest_peak_rsi = ref_rsi[i]
-            #latest_peak_pos = find_pos_price(latest_peak_price, price_set)
+            # latest_peak_pos = find_pos_price(latest_peak_price, price_set)
             latest_peak_pos = find_pos_price(latest_peak_rsi, rsi_set)
             latest_rsi_set = rsi_set[-latest_peak_pos:-1]
 
