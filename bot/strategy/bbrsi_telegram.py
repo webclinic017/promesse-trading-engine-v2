@@ -110,7 +110,7 @@ class BBRSI(Strategy):
                     price_prominence=ma_long*0.001,
                 )
 
-                hbullish_div = bull_div(
+                hbullish_div = hbull_div(
                     lows,
                     rsi,
                     timestamps,
