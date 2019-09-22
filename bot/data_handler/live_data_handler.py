@@ -54,7 +54,7 @@ class LiveDataHandler(DataHandler):
 
         for symbol in self.symbol_list:
             self.latest_symbol_data[symbol] = self.exchange.fetch_ohlcv(
-                symbol, timeframe=self.timeframe, limit=200)
+                symbol, timeframe=self.timeframe)
             # Wait a sec before sending a request
             time.sleep(1)
 

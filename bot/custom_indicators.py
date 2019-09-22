@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 
 
-def bull_div(price, rsi, timestamps, window=20, price_prominence=1, rsi_prominence=1):
+def bull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    price = price[-window:]
-    rsi = rsi[-window:]
-    timestamps = timestamps[-window:]
+    price = price[-window:-1]
+    rsi = rsi[-window:-1]
+    timestamps = timestamps[-window:-1]
 
     latest_price = price[-2]
     latest_rsi = rsi[-2]
@@ -42,12 +42,12 @@ def bull_div(price, rsi, timestamps, window=20, price_prominence=1, rsi_prominen
     return detected_divs
 
 
-def bear_div(price, rsi, timestamps, window=20, price_prominence=1, rsi_prominence=1):
+def bear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    price = price[-window:]
-    rsi = rsi[-window:]
-    timestamps = timestamps[-window:]
+    price = price[-window:-1]
+    rsi = rsi[-window:-1]
+    timestamps = timestamps[-window:-1]
 
     latest_price = price[-2]
     latest_rsi = rsi[-2]

@@ -69,7 +69,7 @@ class Engine:
                 Once the order is generated, it is sent to the Execution Handler which fills the order. The fill event is sent back to the 
                 portfolio to update the current positions and holdings.
         """
-        print(f'Running in  {self.config["run_mode"]} mode')
+        print(f'Running in {self.config["run_mode"]} mode')
         i = 0
         while True:
             i += 1
