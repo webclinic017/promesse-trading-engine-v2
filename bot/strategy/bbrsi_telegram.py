@@ -96,7 +96,7 @@ class BBRSI(Strategy):
                     self.telegram.send_text({
                         'symbol': symbol,
                         'div_type': div_type,
-                        'peaks': bullish_div
+                        'peaks': hbearish_div
                     })
 
             elif ma_short > ma_long:
@@ -137,5 +137,5 @@ class BBRSI(Strategy):
                     self.telegram.send_text({
                         'symbol': symbol,
                         'div_type': div_type,
-                        'peaks': bearish_div
+                        'peaks': hbullish_div
                     })
