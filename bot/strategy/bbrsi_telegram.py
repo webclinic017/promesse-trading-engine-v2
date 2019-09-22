@@ -7,7 +7,7 @@ import pandas as pd
 
 from datetime import datetime
 from talib import RSI, EMA
-from custom_indicators import bull_div, bear_div
+from custom_indicators import bull_div, bear_div, hbull_div, hbear_div
 from helpers import load_config
 
 from telegram import TelegramBot
@@ -69,8 +69,27 @@ class BBRSI(Strategy):
                     price_prominence=ma_long*0.001,
                 )
 
+                hbearish_div = hbear_div(
+                    highs,
+                    rsi,
+                    timestamps,
+                    window=self.div_window,
+                    price_prominence=ma_long*0.001,
+                )
+
                 if bullish_div and len(bullish_div) > 1:
-                    div_type = 'BULLISH DIV'
+                    div_type = 'BULLISH'
+                    print(
+                        f'{symbol} - {div_type}: {signal_timestamp}')
+
+                    self.telegram.send_text({
+                        'symbol': symbol,
+                        'div_type': div_type,
+                        'peaks': bullish_div
+                    })
+
+                elif hbearish_div and len(hbearish_div) > 1:
+                    div_type = 'HIDDEN BEARISH'
                     print(
                         f'{symbol} - {div_type}: {signal_timestamp}')
 
@@ -91,8 +110,27 @@ class BBRSI(Strategy):
                     price_prominence=ma_long*0.001,
                 )
 
+                hbullish_div = bull_div(
+                    lows,
+                    rsi,
+                    timestamps,
+                    window=self.div_window,
+                    price_prominence=ma_long*0.001,
+                )
+
                 if bearish_div and len(bearish_div) > 1:
-                    div_type = 'BEARISH DIV'
+                    div_type = 'BEARISH'
+                    print(
+                        f'{symbol} - {div_type}: {signal_timestamp}')
+
+                    self.telegram.send_text({
+                        'symbol': symbol,
+                        'div_type': div_type,
+                        'peaks': bearish_div
+                    })
+
+                elif hbullish_div and len(hbullish_div) > 1:
+                    div_type = 'HIDDEN BULLISH'
                     print(
                         f'{symbol} - {div_type}: {signal_timestamp}')
 
