@@ -50,12 +50,14 @@ class BBRSI(Strategy):
             closes = self.data_handler.get_latest_bars_values(
                 symbol, 'close', N=self.bars_window)
 
+            hlc3 = (highs + lows + closes) / 3
+
             signal_timestamp = timestamps[-1]
 
-            rsi = RSI(closes, timeperiod=self.rsi_window)
+            rsi = RSI(hlc3, timeperiod=self.rsi_window)
 
-            ma_short = EMA(closes, timeperiod=self.ma_short)[-1]
-            ma_long = EMA(closes, timeperiod=self.ma_long)[-1]
+            ma_short = EMA(hlc3, timeperiod=self.ma_short)[-1]
+            ma_long = EMA(hlc3, timeperiod=self.ma_long)[-1]
 
             # Buy Signal conditions
             if ma_short < ma_long:

@@ -5,15 +5,15 @@ import pandas as pd
 def bull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    price = price[-window:-1]
-    rsi = rsi[-window:-1]
-    timestamps = timestamps[-window:-1]
+    price = price[-window:]
+    rsi = rsi[-window:]
+    timestamps = timestamps[-window:]
 
     latest_price = price[-2]
     latest_rsi = rsi[-2]
     latest_timestamp = timestamps[-2]
 
-    if latest_rsi > rsi[-1] or latest_rsi > rsi[-3]:
+    if latest_rsi >= rsi[-1] or latest_rsi >= rsi[-3]:
         return False
 
     price_peaks, _ = find_peaks(-price, prominence=price_prominence)
@@ -45,15 +45,15 @@ def bull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominen
 def hbull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    price = price[-window:-1]
-    rsi = rsi[-window:-1]
-    timestamps = timestamps[-window:-1]
+    price = price[-window:]
+    rsi = rsi[-window:]
+    timestamps = timestamps[-window:]
 
     latest_price = price[-2]
     latest_rsi = rsi[-2]
     latest_timestamp = timestamps[-2]
 
-    if latest_rsi > rsi[-1] or latest_rsi > rsi[-3]:
+    if latest_rsi >= rsi[-1] or latest_rsi >= rsi[-3]:
         return False
 
     price_peaks, _ = find_peaks(-price, prominence=price_prominence)
@@ -75,7 +75,7 @@ def hbull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_promine
 
     for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price > price_peak and latest_rsi < rsi_peak:
-            if rsi_peak == max(rsi[index:-1]):
+            if latest_rsi == min(rsi[index:-1]):
                 detected_divs.append(
                     (timestamp_peak, price_peak, rsi_peak))
 
@@ -85,15 +85,15 @@ def hbull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_promine
 def bear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    price = price[-window:-1]
-    rsi = rsi[-window:-1]
-    timestamps = timestamps[-window:-1]
+    price = price[-window:]
+    rsi = rsi[-window:]
+    timestamps = timestamps[-window:]
 
     latest_price = price[-2]
     latest_rsi = rsi[-2]
     latest_timestamp = timestamps[-2]
 
-    if latest_rsi < rsi[-1] or latest_rsi < rsi[-3]:
+    if latest_rsi <= rsi[-1] or latest_rsi <= rsi[-3]:
         return False
 
     price_peaks, _ = find_peaks(price, prominence=price_prominence)
@@ -125,15 +125,15 @@ def bear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominen
 def hbear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominence=1):
     from scipy.signal import find_peaks
 
-    price = price[-window:-1]
-    rsi = rsi[-window:-1]
-    timestamps = timestamps[-window:-1]
+    price = price[-window:]
+    rsi = rsi[-window:]
+    timestamps = timestamps[-window:]
 
     latest_price = price[-2]
     latest_rsi = rsi[-2]
     latest_timestamp = timestamps[-2]
 
-    if latest_rsi < rsi[-1] or latest_rsi < rsi[-3]:
+    if latest_rsi <= rsi[-1] or latest_rsi <= rsi[-3]:
         return False
 
     price_peaks, _ = find_peaks(price, prominence=price_prominence)
@@ -155,7 +155,7 @@ def hbear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_promine
 
     for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price < price_peak and latest_rsi > rsi_peak:
-            if rsi_peak == min(rsi[index:-1]):
+            if latest_rsi == max(rsi[index:-1]):
                 detected_divs.append(
                     (timestamp_peak, price_peak, rsi_peak))
 
