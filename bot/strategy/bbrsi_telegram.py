@@ -26,10 +26,10 @@ class BBRSI(Strategy):
 
         self.bars_window = 200
         self.rsi_window = 14
-        self.div_window = 50
+        self.div_window = 200
 
-        self.ma_short = 10
-        self.ma_long = 50
+        self.ma_short = 20
+        self.ma_long = 90
 
         self.telegram = TelegramBot(
             bot_token=self.config['telegram']['bot_token'],
