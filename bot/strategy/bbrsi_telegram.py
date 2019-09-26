@@ -54,7 +54,7 @@ class BBRSI(Strategy):
 
             signal_timestamp = timestamps[-1]
 
-            rsi = RSI(hlc3, timeperiod=self.rsi_window)
+            rsi = RSI(closes, timeperiod=self.rsi_window)
 
             ma_short = EMA(hlc3, timeperiod=self.ma_short)[-1]
             ma_long = EMA(hlc3, timeperiod=self.ma_long)[-1]
