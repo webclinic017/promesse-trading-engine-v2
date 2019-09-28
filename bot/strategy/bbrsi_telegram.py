@@ -90,7 +90,7 @@ class BBRSI(Strategy):
                         'timeframe': self.data_handler.timeframe,
                         'div_type': div_type,
                         'peaks': bullish_div,
-                        'trend': trend
+                        'trend': trend,
                         'ma_short': ma_short,
                         'ma_long': ma_long
                     })
@@ -105,7 +105,7 @@ class BBRSI(Strategy):
                         'timeframe': self.data_handler.timeframe,
                         'div_type': div_type,
                         'peaks': hbearish_div,
-                        'trend': ,
+                        'trend': trend,
                         'ma_short': ma_short,
                         'ma_long': ma_long
                     })

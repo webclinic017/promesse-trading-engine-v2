@@ -23,6 +23,7 @@ tabulate = "*"
 scipy = "*"
 pendulum = "*"
 colored = "*"
+marketprofile = "*"
 
 [requires]
 python_version = "3.7"
