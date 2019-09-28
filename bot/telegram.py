@@ -15,6 +15,8 @@ class TelegramBot:
 <b>Peak 1:</b> <code>{signal['peaks'][0][0]}</code>
 <b>Peak 2:</b> <code>{signal['peaks'][1][0]}</code>
 <b>Trend:</b> <code>{signal['trend']}</code>
+<b>MA Short:</b> <code>{signal['ma_short']}</code>
+<b>MA Long:</b> <code>{signal['ma_long']}</code>
 '''
 
         return parsed_text
