@@ -35,7 +35,7 @@ def bull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominen
 
     for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price < price_peak and latest_rsi > rsi_peak:
-            if rsi_peak == min(rsi[index:-1]):
+            if rsi_peak == min(rsi[index:-1]) and latest_price == min(price[index:-1]):
                 detected_divs.append(
                     (timestamp_peak, price_peak, rsi_peak))
 
@@ -115,7 +115,7 @@ def bear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_prominen
 
     for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price > price_peak and latest_rsi < rsi_peak:
-            if rsi_peak == max(rsi[index:-1]):
+            if rsi_peak == max(rsi[index:-1]) and latest_price == max(price[index:-1]):
                 detected_divs.append(
                     (timestamp_peak, price_peak, rsi_peak))
 
