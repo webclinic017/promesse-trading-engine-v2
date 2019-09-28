@@ -10,10 +10,12 @@ class TelegramBot:
 
         parsed_text = f'''
 <b>Symbol:</b> <code>{signal['symbol']}</code>
+<b>Timeframe:</b> <code>{signal['timeframe']}</code>
 <b>Divergence:</b> <code>{signal['div_type']}</code>
 <b>Peak 1:</b> <code>{signal['peaks'][0][0]}</code>
 <b>Peak 2:</b> <code>{signal['peaks'][1][0]}</code>
-        '''
+<b>Trend:</b> <code>{signal['trend']}</code>
+'''
 
         return parsed_text
 

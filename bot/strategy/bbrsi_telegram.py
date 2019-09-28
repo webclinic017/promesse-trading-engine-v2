@@ -61,7 +61,8 @@ class BBRSI(Strategy):
 
             # Buy Signal conditions
             if ma_short < ma_long:
-                print(f'{symbol}: Short-term bearish')
+                trend = 'Short-term bearish'
+                print(f'{symbol}: {trend}')
 
                 bullish_div = bull_div(
                     lows,
@@ -86,8 +87,10 @@ class BBRSI(Strategy):
 
                     self.telegram.send_text({
                         'symbol': symbol,
+                        'timeframe': self.data_handler.timeframe,
                         'div_type': div_type,
-                        'peaks': bullish_div
+                        'peaks': bullish_div,
+                        'trend': trend
                     })
 
                 elif hbearish_div and len(hbearish_div) > 1:
@@ -97,12 +100,15 @@ class BBRSI(Strategy):
 
                     self.telegram.send_text({
                         'symbol': symbol,
+                        'timeframe': self.data_handler.timeframe,
                         'div_type': div_type,
-                        'peaks': hbearish_div
+                        'peaks': hbearish_div,
+                        'trend': trend
                     })
 
             elif ma_short > ma_long:
-                print(f'{symbol}: Short-term bullish')
+                trend = 'Short-term bullish'
+                print(f'{symbol}: {trend}')
 
                 bearish_div = bear_div(
                     highs,
@@ -127,8 +133,10 @@ class BBRSI(Strategy):
 
                     self.telegram.send_text({
                         'symbol': symbol,
+                        'timeframe': self.data_handler.timeframe,
                         'div_type': div_type,
-                        'peaks': bearish_div
+                        'peaks': bearish_div,
+                        'trend': trend
                     })
 
                 elif hbullish_div and len(hbullish_div) > 1:
@@ -138,6 +146,8 @@ class BBRSI(Strategy):
 
                     self.telegram.send_text({
                         'symbol': symbol,
+                        'timeframe': self.data_handler.timeframe,
                         'div_type': div_type,
-                        'peaks': hbullish_div
+                        'peaks': hbullish_div,
+                        'trend': trend
                     })
