@@ -75,7 +75,7 @@ def hbull_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_promine
 
     for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price > price_peak and latest_rsi < rsi_peak:
-            if latest_rsi == min(rsi[index:-1]):
+            if latest_rsi == min(rsi[index:-1]) and price_peak == min(price[index:-1]):
                 detected_divs.append(
                     (timestamp_peak, price_peak, rsi_peak))
 
@@ -155,7 +155,7 @@ def hbear_div(price, rsi, timestamps, window=50, price_prominence=1, rsi_promine
 
     for index, timestamp_peak, price_peak, rsi_peak in full_peaks_set:
         if latest_price < price_peak and latest_rsi > rsi_peak:
-            if latest_rsi == max(rsi[index:-1]):
+            if latest_rsi == max(rsi[index:-1]) and price_peak == max(price[index:-1]):
                 detected_divs.append(
                     (timestamp_peak, price_peak, rsi_peak))
 
